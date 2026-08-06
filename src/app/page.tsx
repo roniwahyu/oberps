@@ -1,0 +1,138 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import {
+  GraduationCap,
+  Sparkles,
+  BookOpen,
+  Info,
+  Github,
+  Heart,
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { RpsBuilder } from "@/components/rps/rps-builder";
+import { RpsSavedList } from "@/components/rps/rps-saved-list";
+import { RpsAbout } from "@/components/rps/rps-about";
+
+export default function Home() {
+  const [activeTab, setActiveTab] = useState("builder");
+  const [savedRefreshKey, setSavedRefreshKey] = useState(0);
+
+  const handleSaved = useCallback(() => {
+    setSavedRefreshKey((k) => k + 1);
+    setActiveTab("saved");
+  }, []);
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shrink-0">
+              <GraduationCap className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-base sm:text-lg font-bold tracking-tight truncate">
+                  SmartRPS Builder
+                </h1>
+                <Badge
+                  variant="secondary"
+                  className="hidden sm:inline-flex text-[10px] font-normal"
+                >
+                  OBE
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                AI-powered RPS Generator berbasis Outcome-Based Education
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden sm:inline-flex h-9"
+              asChild
+            >
+              <a
+                href="https://smartrps.rifainstitute.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Github className="h-3.5 w-3.5 mr-1.5" />
+                Referensi
+              </a>
+            </Button>
+            <Button
+              size="sm"
+              className="h-9"
+              onClick={() => setActiveTab("builder")}
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              Buat RPS
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="w-full space-y-6"
+        >
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <TabsList className="bg-muted/60 p-1">
+              <TabsTrigger value="builder" className="gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Builder</span>
+              </TabsTrigger>
+              <TabsTrigger value="saved" className="gap-1.5">
+                <BookOpen className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Tersimpan</span>
+              </TabsTrigger>
+              <TabsTrigger value="about" className="gap-1.5">
+                <Info className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Tentang</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="builder" className="mt-0 focus-visible:outline-none">
+            <RpsBuilder onSaved={handleSaved} />
+          </TabsContent>
+
+          <TabsContent value="saved" className="mt-0 focus-visible:outline-none">
+            <RpsSavedList refreshKey={savedRefreshKey} />
+          </TabsContent>
+
+          <TabsContent value="about" className="mt-0 focus-visible:outline-none">
+            <RpsAbout />
+          </TabsContent>
+        </Tabs>
+      </main>
+
+      {/* Footer */}
+      <footer className="mt-auto border-t border-border/60 bg-muted/20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <GraduationCap className="h-3.5 w-3.5" />
+            <span>
+              SmartRPS Builder &middot; OBE Curriculum Framework
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span>Dibuat dengan</span>
+            <Heart className="h-3 w-3 fill-red-500 text-red-500" />
+            <span>menggunakan Next.js &amp; AI</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
