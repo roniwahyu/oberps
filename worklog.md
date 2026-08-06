@@ -130,3 +130,99 @@ Unresolved Issues / Next Phase Priorities:
 - Program Studi text truncated in detail dialog metadata (minor, consider allow-wrap on small screens)
 - LLM generation takes 59-80s (inherent to model, consider adding streaming/progress indicator)
 - Could add: edit existing RPS, export to PDF/Word, multiple RPS templates, CPL/CPMK library
+
+---
+Task ID: 8
+Agent: webDevReview Cron Agent (Round 1)
+Task: QA assessment, bug fixes, new features, and styling improvements
+
+Work Log:
+- Reviewed worklog.md — project was STABLE at 7.5/10 polish with 3 tabs (Builder/Tersimpan/Tentang)
+- QA via agent-browser + VLM: identified improvement areas (footer minimal, Program Studi truncation, no formatted view, no bobot validation, no PDF export)
+
+Bug Fixes:
+- Fixed Program Studi text truncation in detail dialog: Meta component now uses `break-words` instead of `truncate`, allowing text to wrap to second line
+
+New Features Added:
+1. RPS Summary/Formatted View (src/components/rps/rps-summary.tsx):
+   - Parsed, human-readable view of generated JSON
+   - Sections: Course info header, CPL list, CPMK list, Taksonomi Bloom table, Weekly matrix (M1-M16) table with UTS/UAS highlighting, Materi Pokok, Referensi (utama/pendukung), Media/Team Teaching/MK Syarat info cards, RISPKM integration, Rancangan Tugas, Rubrik Penilaian
+   - Empty weeks shown as muted "— belum diisi —"
+   - UTS rows highlighted amber, UAS rows highlighted rose
+2. Bobot Validation (src/lib/rps-parser.ts):
+   - calculateBobot() sums M1-M16 bobot values, checks if total = 100
+   - Live badge in Builder header, Saved card, and detail dialog tab
+   - Green badge when valid (100%), amber badge when invalid
+   - BobotBanner in summary view with detailed message
+3. JSON/Ringkasan View Toggle in Builder:
+   - Toggle between formatted Summary view and raw JSON view
+   - Both views accessible after generation
+4. PDF Export / Print (src/components/rps/print-utils.ts):
+   - buildPrintHtml() generates clean A4 print-ready HTML with:
+     - Header with OBE badge, info grid (MK/SKS/Semester/Prodi)
+     - 11 numbered sections (Deskripsi, CPL, CPMK, Taksonomi, Mingguan, Materi, Referensi, RISPKM, Media, Tugas, Rubrik)
+     - Bobot validation badge in weekly matrix header
+     - Print-optimized CSS (@page A4, page-break rules)
+   - Opens in new window, triggers browser print dialog (Save as PDF)
+   - Available in: Builder (Cetak/PDF button), Saved card (printer icon), Detail dialog (Cetak/PDF button)
+5. Duplicate / Salin ke Builder:
+   - Load saved RPS data back into Builder for editing/regenerating
+   - Pre-fills form (MK/SKS/Semester/Prodi/Deskripsi) + loads jsonData + promptText
+   - RpsLoadRequest interface with nonce for effect triggering
+   - Available in: Saved card (copy icon), Detail dialog (Salin ke Builder button)
+6. Stats Dashboard in Saved tab:
+   - 3 stat cards: Total RPS, Total SKS, Program Studi count
+   - Color-coded icons (primary/emerald/amber)
+7. Detail Dialog Tabbed Interface:
+   - Ringkasan tab (with bobot badge in tab label), JSON tab, Info tab (deskripsi + master prompt)
+   - Scrollable content areas
+
+Styling Improvements:
+- Header: added blur glow behind logo icon
+- Header: added "Bertenaga AI · OBE Curriculum Framework" subtitle on desktop
+- Footer: gradient background (from-muted/40 via-muted/20 to-muted/40)
+- Footer: added logo icon, version number (v1.1)
+- Saved cards: gradient top bar (from-primary/60 to-primary/0)
+- Builder: empty state text changed from "Belum ada hasil JSON" to "Belum ada hasil RPS"
+- Builder: tips card updated with new feature instructions
+- Summary view: gradient hero card for course info, color-coded badges throughout
+- Tables: hover states, UTS/UAS row highlighting, muted empty rows
+- View toggle: segmented control style with active shadow
+
+New Files Created:
+- src/lib/rps-parser.ts (parsing utilities: CPL, CPMK, weekly matrix, bobot, rubrik)
+- src/components/rps/rps-summary.tsx (formatted summary view component)
+- src/components/rps/print-utils.ts (print-ready HTML generator)
+
+Modified Files:
+- src/components/rps/rps-builder.tsx (added view toggle, bobot badge, print, loadRequest)
+- src/components/rps/rps-saved-list.tsx (added stats, print, duplicate, tabbed detail dialog, fixed truncation)
+- src/app/page.tsx (wired duplicate feature, improved header/footer styling)
+
+Verification Results:
+- bun run lint: PASSED (no errors)
+- dev.log: no runtime errors, all API routes 200/201
+- agent-browser E2E:
+  - Builder: form works, generate succeeds (~67s), Summary view renders with Taksonomi table
+  - View toggle: Ringkasan ↔ JSON switches correctly
+  - Bobot badge: shows 120% (amber, invalid) — validation working
+  - Save: auto-switches to Tersimpan tab with toast
+  - Saved tab: stats cards (Total RPS=1, Total SKS=3, Prodi=1) visible
+  - Saved card: Print/Duplicate/Detail buttons all present, bobot badge visible
+  - Duplicate: loads data into Builder, toast "Dimuat ke Builder"
+  - Detail dialog: tabbed (Ringkasan/JSON/Info), bobot badge in tab, Cetak/Salin buttons, Program Studi wraps (not truncated)
+  - Mobile (375px): fully responsive single column, no overflow
+- VLM assessment: 8/10 (Builder), 9/10 (Saved list) — up from 7.5/10
+
+Stage Summary:
+- ALL planned features implemented and verified working
+- Polish improved from 7.5/10 → 8-9/10
+- 6 major new features: Summary view, Bobot validation, View toggle, PDF export, Duplicate, Stats
+- 1 bug fixed (Program Studi truncation)
+- Lint clean, dev server stable, responsive confirmed
+
+Unresolved Issues / Next Phase Priorities:
+- LLM sometimes generates bobot total ≠ 100 (e.g., 120%) — could add a "regenerate" or "fix bobot" button
+- PDF export uses browser print (reliable but manual) — could integrate pdf skill backend for server-side generation
+- Could add: edit individual RPS fields inline, CPL/CPMK library/templates, batch export, dark mode toggle
+- Consider adding loading progress indicator during 60-80s LLM generation

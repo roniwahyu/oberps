@@ -1,7 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Sparkles, Save, Loader2, RotateCcw, Wand2, FileText } from "lucide-react";
+import {
+  Sparkles,
+  Save,
+  Loader2,
+  RotateCcw,
+  Wand2,
+  FileText,
+  Code2,
+  LayoutDashboard,
+  Printer,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +33,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -29,10 +40,25 @@ import {
   RPSFormInput,
   buildMasterPrompt,
 } from "@/lib/rps-template";
+import { calculateBobot, toRpsData, RpsData } from "@/lib/rps-parser";
 import { JsonPreview } from "./json-preview";
+import { RpsSummary } from "./rps-summary";
+import { buildPrintHtml } from "./print-utils";
+
+export interface RpsLoadRequest {
+  mataKuliah: string;
+  sks: string;
+  semester: string;
+  programStudi: string;
+  deskripsi: string;
+  jsonData: unknown;
+  promptText: string;
+  nonce: number;
+}
 
 interface RpsBuilderProps {
   onSaved?: () => void;
+  loadRequest?: RpsLoadRequest | null;
 }
 
 const SEMESTER_OPTIONS = Array.from({ length: 14 }, (_, i) => String(i + 1));
@@ -50,7 +76,9 @@ const PROGRAM_STUDI_PRESETS = [
   "S1 Pendidikan Teknologi Informasi",
 ];
 
-export function RpsBuilder({ onSaved }: RpsBuilderProps) {
+type ViewMode = "summary" | "json";
+
+export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
   const { toast } = useToast();
   const [form, setForm] = useState<RPSFormInput>(DEFAULT_FORM_INPUT);
   const [deskripsi, setDeskripsi] = useState("");
@@ -58,8 +86,34 @@ export function RpsBuilder({ onSaved }: RpsBuilderProps) {
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("summary");
+
+  // Load data from a saved RPS (duplicate / edit)
+  useEffect(() => {
+    if (!loadRequest || loadRequest.nonce === 0) return;
+    setForm({
+      mataKuliah: loadRequest.mataKuliah,
+      sks: loadRequest.sks,
+      semester: loadRequest.semester,
+      programStudi: loadRequest.programStudi,
+    });
+    setDeskripsi(loadRequest.deskripsi);
+    setGeneratedData(loadRequest.jsonData);
+    setGeneratedPrompt(loadRequest.promptText);
+    setViewMode("summary");
+  }, [loadRequest]);
 
   const livePrompt = useMemo(() => buildMasterPrompt(form), [form]);
+
+  const rpsData: RpsData | null = useMemo(
+    () => toRpsData(generatedData),
+    [generatedData]
+  );
+
+  const bobot = useMemo(
+    () => (rpsData ? calculateBobot(rpsData) : null),
+    [rpsData]
+  );
 
   const handleGenerate = useCallback(async () => {
     if (!form.mataKuliah.trim() || !form.sks || !form.semester || !form.programStudi.trim()) {
@@ -88,6 +142,7 @@ export function RpsBuilder({ onSaved }: RpsBuilderProps) {
 
       setGeneratedData(json.data);
       setGeneratedPrompt(json.prompt);
+      setViewMode("summary");
       toast({
         title: "RPS berhasil dibuat!",
         description: `RPS untuk ${form.mataKuliah} telah digenerate oleh AI.`,
@@ -157,6 +212,33 @@ export function RpsBuilder({ onSaved }: RpsBuilderProps) {
     setGeneratedPrompt("");
     toast({ title: "Direset", description: "Form dan preview telah dibersihkan." });
   }, [toast]);
+
+  const handlePrint = useCallback(() => {
+    if (!rpsData) return;
+    const html = buildPrintHtml({
+      data: rpsData,
+      mataKuliah: form.mataKuliah,
+      sks: form.sks,
+      semester: form.semester,
+      programStudi: form.programStudi,
+      deskripsi,
+    });
+    const win = window.open("", "_blank", "width=900,height=700");
+    if (!win) {
+      toast({
+        title: "Popup diblokir",
+        description: "Izinkan popup untuk mencetak RPS.",
+        variant: "destructive",
+      });
+      return;
+    }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => {
+      win.print();
+    }, 400);
+  }, [rpsData, form, deskripsi, toast]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -329,7 +411,7 @@ export function RpsBuilder({ onSaved }: RpsBuilderProps) {
         </Card>
       </div>
 
-      {/* RIGHT: JSON Preview / Empty state */}
+      {/* RIGHT: Summary / JSON Preview / Empty state */}
       <div className="lg:col-span-7 space-y-4">
         <Card className="border-border/60 shadow-sm">
           <CardHeader className="pb-3">
@@ -337,47 +419,95 @@ export function RpsBuilder({ onSaved }: RpsBuilderProps) {
               <div>
                 <CardTitle className="text-base flex items-center gap-2">
                   <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                  Hasil JSON
+                  Hasil RPS
                 </CardTitle>
                 <CardDescription className="text-xs mt-1">
                   {generatedData
-                    ? "Hasil generate RPS siap untuk disimpan atau diunduh."
-                    : "Hasil JSON akan muncul di sini setelah generate."}
+                    ? "Hasil generate RPS siap untuk disimpan, diunduh, atau dicetak."
+                    : "Hasil RPS akan muncul di sini setelah generate."}
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {generatedData && bobot && (
+                  <Badge
+                    variant={bobot.isValid ? "default" : "secondary"}
+                    className={`text-[10px] font-mono ${bobot.isValid ? "bg-emerald-600 hover:bg-emerald-600" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}
+                    title={`Total bobot M1-M16: ${bobot.total}%`}
+                  >
+                    {bobot.isValid ? (
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                    ) : (
+                      <XCircle className="h-3 w-3 mr-1" />
+                    )}
+                    Bobot: {bobot.total}%
+                  </Badge>
+                )}
                 {generatedData && (
-                  <>
-                    <Badge variant="outline" className="text-[10px]">
-                      OBE Curriculum
-                    </Badge>
-                    <Button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      size="sm"
-                      className="h-8"
-                    >
-                      {isSaving ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                      ) : (
-                        <Save className="h-3.5 w-3.5 mr-1.5" />
-                      )}
-                      {isSaving ? "Menyimpan..." : "Simpan"}
-                    </Button>
-                  </>
+                  <Button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    size="sm"
+                    className="h-8"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    {isSaving ? "Menyimpan..." : "Simpan"}
+                  </Button>
                 )}
               </div>
             </div>
+
+            {/* View mode toggle */}
+            {generatedData && (
+              <div className="flex items-center gap-1 mt-1">
+                <div className="inline-flex items-center rounded-md border border-border/60 bg-muted/40 p-0.5">
+                  <ViewToggleBtn
+                    active={viewMode === "summary"}
+                    onClick={() => setViewMode("summary")}
+                    icon={LayoutDashboard}
+                    label="Ringkasan"
+                  />
+                  <ViewToggleBtn
+                    active={viewMode === "json"}
+                    onClick={() => setViewMode("json")}
+                    icon={Code2}
+                    label="JSON"
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handlePrint}
+                  className="h-8 ml-auto text-xs"
+                >
+                  <Printer className="h-3.5 w-3.5 mr-1.5" />
+                  Cetak / PDF
+                </Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
-            {generatedData ? (
+            {!generatedData ? (
+              <EmptyState isGenerating={isGenerating} />
+            ) : viewMode === "json" ? (
               <JsonPreview
                 data={generatedData}
                 filename={`RPS_${form.mataKuliah.replace(/\s+/g, "_")}.json`}
                 maxHeight="70vh"
               />
             ) : (
-              <EmptyState isGenerating={isGenerating} />
+              <ScrollArea className="h-[70vh] w-full pr-3 -mr-3">
+                <RpsSummary
+                  data={rpsData!}
+                  mataKuliah={form.mataKuliah}
+                  sks={form.sks}
+                  semester={form.semester}
+                  programStudi={form.programStudi}
+                />
+              </ScrollArea>
             )}
           </CardContent>
         </Card>
@@ -390,9 +520,10 @@ export function RpsBuilder({ onSaved }: RpsBuilderProps) {
                 <div className="space-y-1">
                   <p className="font-medium text-foreground">Tips:</p>
                   <ul className="list-disc list-inside space-y-0.5 ml-1">
-                    <li>Periksa total bobot M1–M16 = 100 sebelum disimpan.</li>
-                    <li>Gunakan tombol <span className="font-mono">Salin</span> untuk menyalin JSON ke clipboard.</li>
-                    <li>Gunakan tombol <span className="font-mono">Unduh</span> untuk menyimpan sebagai file .json.</li>
+                    <li>Gunakan tab <span className="font-mono">Ringkasan</span> untuk melihat tampilan terformat RPS.</li>
+                    <li>Gunakan tab <span className="font-mono">JSON</span> untuk melihat & menyalin data mentah JSON.</li>
+                    <li>Periksa badge bobot — total M1–M16 harus = 100%.</li>
+                    <li>Klik <span className="font-mono">Cetak / PDF</span> untuk mencetak atau menyimpan sebagai PDF.</li>
                     <li>Klik <span className="font-mono">Simpan</span> untuk menyimpan ke database lokal.</li>
                   </ul>
                 </div>
@@ -402,6 +533,32 @@ export function RpsBuilder({ onSaved }: RpsBuilderProps) {
         )}
       </div>
     </div>
+  );
+}
+
+function ViewToggleBtn({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ElementType;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+        active
+          ? "bg-background text-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </button>
   );
 }
 
@@ -419,12 +576,12 @@ function EmptyState({ isGenerating }: { isGenerating: boolean }) {
         </div>
       </div>
       <h3 className="text-base font-semibold text-foreground">
-        {isGenerating ? "Sedang men-generate RPS..." : "Belum ada hasil JSON"}
+        {isGenerating ? "Sedang men-generate RPS..." : "Belum ada hasil RPS"}
       </h3>
       <p className="text-sm text-muted-foreground mt-1 max-w-sm">
         {isGenerating
           ? "AI sedang menyusun RPS berbasis OBE. Mohon tunggu sebentar."
-          : "Isi form di samping lalu klik tombol “Generate RPS dengan AI” untuk membuat JSON RPS."}
+          : "Isi form di samping lalu klik tombol “Generate RPS dengan AI” untuk membuat RPS."}
       </p>
       {isGenerating && (
         <div className="mt-4 flex items-center gap-1.5">

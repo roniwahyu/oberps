@@ -8,21 +8,56 @@ import {
   Info,
   Github,
   Heart,
+  Zap,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RpsBuilder } from "@/components/rps/rps-builder";
+import { RpsBuilder, RpsLoadRequest } from "@/components/rps/rps-builder";
 import { RpsSavedList } from "@/components/rps/rps-saved-list";
 import { RpsAbout } from "@/components/rps/rps-about";
+
+interface SavedRpsLike {
+  id: string;
+  mataKuliah: string;
+  sks: string;
+  semester: string;
+  programStudi: string;
+  deskripsi: string | null;
+  promptText: string;
+  jsonData: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("builder");
   const [savedRefreshKey, setSavedRefreshKey] = useState(0);
+  const [loadRequest, setLoadRequest] = useState<RpsLoadRequest | null>(null);
 
   const handleSaved = useCallback(() => {
     setSavedRefreshKey((k) => k + 1);
     setActiveTab("saved");
+  }, []);
+
+  const handleDuplicate = useCallback((item: SavedRpsLike) => {
+    setLoadRequest({
+      mataKuliah: item.mataKuliah,
+      sks: item.sks,
+      semester: item.semester,
+      programStudi: item.programStudi,
+      deskripsi: item.deskripsi || "",
+      jsonData: (() => {
+        try {
+          return JSON.parse(item.jsonData);
+        } catch {
+          return null;
+        }
+      })(),
+      promptText: item.promptText,
+      nonce: Date.now(),
+    });
+    setActiveTab("builder");
   }, []);
 
   return (
@@ -31,8 +66,11 @@ export default function Home() {
       <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shrink-0">
-              <GraduationCap className="h-5 w-5" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/30 blur-lg rounded-xl" />
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shrink-0">
+                <GraduationCap className="h-5 w-5" />
+              </div>
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -69,7 +107,7 @@ export default function Home() {
             </Button>
             <Button
               size="sm"
-              className="h-9"
+              className="h-9 shadow-sm"
               onClick={() => setActiveTab("builder")}
             >
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
@@ -101,14 +139,18 @@ export default function Home() {
                 <span className="hidden sm:inline">Tentang</span>
               </TabsTrigger>
             </TabsList>
+            <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Zap className="h-3 w-3 text-amber-500" />
+              <span>Bertenaga AI &middot; OBE Curriculum Framework</span>
+            </div>
           </div>
 
           <TabsContent value="builder" className="mt-0 focus-visible:outline-none">
-            <RpsBuilder onSaved={handleSaved} />
+            <RpsBuilder onSaved={handleSaved} loadRequest={loadRequest} />
           </TabsContent>
 
           <TabsContent value="saved" className="mt-0 focus-visible:outline-none">
-            <RpsSavedList refreshKey={savedRefreshKey} />
+            <RpsSavedList refreshKey={savedRefreshKey} onDuplicate={handleDuplicate} />
           </TabsContent>
 
           <TabsContent value="about" className="mt-0 focus-visible:outline-none">
@@ -118,18 +160,22 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto border-t border-border/60 bg-muted/20">
+      <footer className="mt-auto border-t border-border/60 bg-gradient-to-r from-muted/40 via-muted/20 to-muted/40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <GraduationCap className="h-3.5 w-3.5" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <GraduationCap className="h-3.5 w-3.5" />
+            </div>
             <span>
-              SmartRPS Builder &middot; OBE Curriculum Framework
+              SmartRPS Builder &middot; OBE Curriculum Framework &middot; v1.1
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span>Dibuat dengan</span>
-            <Heart className="h-3 w-3 fill-red-500 text-red-500" />
-            <span>menggunakan Next.js &amp; AI</span>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              Dibuat dengan
+              <Heart className="h-3 w-3 fill-red-500 text-red-500" />
+              menggunakan Next.js &amp; AI
+            </span>
           </div>
         </div>
       </footer>
