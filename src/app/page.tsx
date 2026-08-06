@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   GraduationCap,
   Sparkles,
@@ -13,6 +14,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { RpsBuilder, RpsLoadRequest } from "@/components/rps/rps-builder";
 import { RpsSavedList } from "@/components/rps/rps-saved-list";
 import { RpsAbout } from "@/components/rps/rps-about";
@@ -89,7 +91,8 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle />
             <Button
               variant="ghost"
               size="sm"
@@ -145,17 +148,30 @@ export default function Home() {
             </div>
           </div>
 
-          <TabsContent value="builder" className="mt-0 focus-visible:outline-none">
-            <RpsBuilder onSaved={handleSaved} loadRequest={loadRequest} />
-          </TabsContent>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <TabsContent value="builder" className="mt-0 focus-visible:outline-none">
+                <RpsBuilder onSaved={handleSaved} loadRequest={loadRequest} />
+              </TabsContent>
 
-          <TabsContent value="saved" className="mt-0 focus-visible:outline-none">
-            <RpsSavedList refreshKey={savedRefreshKey} onDuplicate={handleDuplicate} />
-          </TabsContent>
+              <TabsContent value="saved" className="mt-0 focus-visible:outline-none">
+                <RpsSavedList
+                  refreshKey={savedRefreshKey}
+                  onDuplicate={handleDuplicate}
+                />
+              </TabsContent>
 
-          <TabsContent value="about" className="mt-0 focus-visible:outline-none">
-            <RpsAbout />
-          </TabsContent>
+              <TabsContent value="about" className="mt-0 focus-visible:outline-none">
+                <RpsAbout />
+              </TabsContent>
+            </motion.div>
+          </AnimatePresence>
         </Tabs>
       </main>
 
@@ -167,7 +183,7 @@ export default function Home() {
               <GraduationCap className="h-3.5 w-3.5" />
             </div>
             <span>
-              SmartRPS Builder &middot; OBE Curriculum Framework &middot; v1.1
+              SmartRPS Builder &middot; OBE Curriculum Framework &middot; v1.2
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">

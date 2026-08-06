@@ -226,3 +226,99 @@ Unresolved Issues / Next Phase Priorities:
 - PDF export uses browser print (reliable but manual) — could integrate pdf skill backend for server-side generation
 - Could add: edit individual RPS fields inline, CPL/CPMK library/templates, batch export, dark mode toggle
 - Consider adding loading progress indicator during 60-80s LLM generation
+
+---
+Task ID: 9
+Agent: webDevReview Cron Agent (Round 2)
+Task: QA assessment, dark mode, preset library, JSON editor, animations, styling improvements
+
+Work Log:
+- Reviewed worklog.md — project was STABLE at 8-9/10 polish (v1.1) after Round 1
+- QA via agent-browser + VLM: confirmed all Round 1 features working
+- Identified next priorities: dark mode, preset library, JSON editor, progress indicator, animations
+
+New Features Added:
+1. Dark Mode / Theme System:
+   - Created src/components/theme-provider.tsx (next-themes wrapper)
+   - Created src/components/theme-toggle.tsx (dropdown menu: Terang/Gelap/Sistem)
+   - Updated src/app/layout.tsx: added ThemeProvider, inline script to prevent FOUC (flash of unstyled content)
+   - Updated src/app/globals.css: redesigned color palette
+     * Light theme: emerald primary (oklch 0.52 0.14 162), subtle blue-tinted background
+     * Dark theme: emerald primary (oklch 0.7 0.15 162), deep slate background
+     * Custom scrollbar styling (10px, rounded, themed)
+     * Custom selection color
+     * .bg-grid utility for subtle grid backgrounds
+     * .text-gradient utility for gradient text
+   - Theme toggle added to header (sun/moon icon with smooth transition)
+2. Preset Mata Kuliah Library (src/lib/course-presets.ts + src/components/rps/preset-library.tsx):
+   - 12 pre-configured mata kuliah templates (RPL, PBO, Basis Data, Jaringan, AI, ML, Algoritma, Sistem Operasi, Kewirausahaan, Metpen, SIM, Manajemen Proyek)
+   - Each preset: mataKuliah, sks, semester, programStudi, deskripsi, kategori, icon
+   - 8 categories (Pemrograman, Data, AI/ML, Infrastruktur, Dasar, Sistem Informasi, Manajemen, Umum)
+   - Search + category filter chips
+   - Grid layout with icon, title, badges, description
+   - Click preset → auto-fills form + toast notification
+   - "Preset" button in Builder form header
+3. Editable JSON Editor (in rps-builder.tsx):
+   - "Edit JSON" button in JSON view mode
+   - Inline textarea editor with dark theme (#282c34), monospace font
+   - Live JSON validation: green "JSON valid" box or red error box with message
+   - "Simpan Perubahan" (save) and "Batal" (cancel) buttons
+   - Edits apply to generatedData (used by save/print/summary)
+4. Generation Progress Indicator:
+   - Animated progress bar (0-90%) during 60-80s LLM generation
+   - Status text updates: "Memanggil AI..." → "Menganalisis mata kuliah..." → "Menyusun CPL & CPMK..." → "Membuat matriks taksonomi Bloom..." → "Mengisi rencana mingguan M1-M16..." → "Menyusun rubrik penilaian..."
+   - Percentage indicator
+   - Animated bouncing dots
+   - Grid background overlay during generation
+5. Framer Motion Animations:
+   - Tab transitions: fade + slide (opacity/opacity, y: 8px)
+   - Empty state icon: scale + fade in
+   - Progress bar: animated width
+
+Styling Improvements:
+- Redesigned color palette: emerald primary (was pure black/gray)
+- Custom themed scrollbar (rounded, themed thumb)
+- Custom selection color (primary-tinted)
+- .bg-grid utility for loading state background
+- Smooth scroll behavior
+- Version bumped to v1.2
+- Header: theme toggle added
+- Footer: version v1.1 → v1.2
+
+New Files Created:
+- src/components/theme-provider.tsx
+- src/components/theme-toggle.tsx
+- src/lib/course-presets.ts (12 presets + categories)
+- src/components/rps/preset-library.tsx
+
+Modified Files:
+- src/app/globals.css (full color palette redesign + utilities)
+- src/app/layout.tsx (ThemeProvider + FOUC prevention script)
+- src/app/page.tsx (theme toggle, framer-motion tab transitions, v1.2)
+- src/components/rps/rps-builder.tsx (preset library, JSON editor, progress indicator, animations)
+
+Verification Results:
+- bun run lint: PASSED (fixed theme-toggle set-state-in-effect lint error)
+- dev.log: clean compilation, no runtime errors, /api/rps/generate 200 in 69s
+- agent-browser E2E:
+  - Light theme: emerald primary visible, 8/10 polish
+  - Dark mode: toggle works, dark background, readable text, emerald accents, no contrast issues
+  - Preset library: dialog opens, 12 presets visible, category filters work, search works
+  - Preset selection: "Kecerdasan Buatan" clicked → form filled (MK, SKS, Semester, Prodi, Deskripsi) + toast "Preset dimuat"
+  - Generate with progress: progress bar 5% → 90%, status text updates, percentage shown, animated dots
+  - JSON editor: "Edit JSON" button appears in JSON view, editor opens with textarea + save/cancel, validation box
+  - Mobile (375px): 9/10, fully responsive single column, no overflow
+  - No console errors after reload (stale module-not-found error resolved)
+- VLM assessment: 8/10 overall (Builder), 9/10 (preset library), 9/10 (mobile)
+
+Stage Summary:
+- 5 major new features: Dark mode, Preset library, JSON editor, Progress indicator, Animations
+- Color palette redesigned from neutral to emerald
+- Polish maintained at 8-9/10
+- Lint clean, dev server stable, responsive confirmed, dark mode fully functional
+
+Unresolved Issues / Next Phase Priorities:
+- VLM suggested: Master Prompt preview could use syntax highlighting or a "preview" toggle for better UX
+- Could add: RPS comparison/diff view, batch export, CPL/CPMK library from saved RPS, inline field editing
+- Consider adding keyboard shortcuts (Ctrl+Enter to generate, Ctrl+S to save)
+- The "regenerate bobot" feature (when total != 100) still not implemented — could add a fix button

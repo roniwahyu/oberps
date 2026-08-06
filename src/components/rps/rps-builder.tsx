@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import {
   Sparkles,
   Save,
@@ -13,6 +14,11 @@ import {
   Printer,
   CheckCircle2,
   XCircle,
+  BookMarked,
+  Pencil,
+  RefreshCw,
+  Check,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,9 +47,11 @@ import {
   buildMasterPrompt,
 } from "@/lib/rps-template";
 import { calculateBobot, toRpsData, RpsData } from "@/lib/rps-parser";
+import { CoursePreset } from "@/lib/course-presets";
 import { JsonPreview } from "./json-preview";
 import { RpsSummary } from "./rps-summary";
 import { buildPrintHtml } from "./print-utils";
+import { PresetLibrary } from "./preset-library";
 
 export interface RpsLoadRequest {
   mataKuliah: string;
@@ -87,6 +95,53 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("summary");
+  const [presetOpen, setPresetOpen] = useState(false);
+  const [isEditingJson, setIsEditingJson] = useState(false);
+  const [jsonEditText, setJsonEditText] = useState("");
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [genProgress, setGenProgress] = useState(0);
+  const [genStatusText, setGenStatusText] = useState("");
+
+  // Simulated progress during generation
+  useEffect(() => {
+    if (!isGenerating) {
+      setGenProgress(0);
+      setGenStatusText("");
+      return;
+    }
+    const steps = [
+      { p: 15, t: "Menganalisis mata kuliah..." },
+      { p: 35, t: "Menyusun CPL & CPMK..." },
+      { p: 55, t: "Membuat matriks taksonomi Bloom..." },
+      { p: 75, t: "Mengisi rencana mingguan M1-M16..." },
+      { p: 90, t: "Menyusun rubrik penilaian..." },
+    ];
+    let idx = 0;
+    setGenProgress(5);
+    setGenStatusText("Memanggil AI...");
+    const interval = setInterval(() => {
+      if (idx < steps.length) {
+        setGenProgress(steps[idx].p);
+        setGenStatusText(steps[idx].t);
+        idx++;
+      }
+    }, 11000);
+    return () => clearInterval(interval);
+  }, [isGenerating]);
+
+  const handleSelectPreset = useCallback((preset: CoursePreset) => {
+    setForm({
+      mataKuliah: preset.mataKuliah,
+      sks: preset.sks,
+      semester: preset.semester,
+      programStudi: preset.programStudi,
+    });
+    setDeskripsi(preset.deskripsi);
+    toast({
+      title: "Preset dimuat",
+      description: `Form diisi dengan ${preset.mataKuliah}.`,
+    });
+  }, [toast]);
 
   // Load data from a saved RPS (duplicate / edit)
   useEffect(() => {
@@ -210,8 +265,37 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
     setDeskripsi("");
     setGeneratedData(null);
     setGeneratedPrompt("");
+    setIsEditingJson(false);
+    setJsonError(null);
     toast({ title: "Direset", description: "Form dan preview telah dibersihkan." });
   }, [toast]);
+
+  const handleStartEditJson = useCallback(() => {
+    if (!generatedData) return;
+    setJsonEditText(JSON.stringify(generatedData, null, 2));
+    setJsonError(null);
+    setIsEditingJson(true);
+  }, [generatedData]);
+
+  const handleCancelEditJson = useCallback(() => {
+    setIsEditingJson(false);
+    setJsonError(null);
+  }, []);
+
+  const handleSaveEditJson = useCallback(() => {
+    try {
+      const parsed = JSON.parse(jsonEditText);
+      setGeneratedData(parsed);
+      setIsEditingJson(false);
+      setJsonError(null);
+      toast({
+        title: "JSON diperbarui",
+        description: "Perubahan JSON telah disimpan (lokal).",
+      });
+    } catch (e) {
+      setJsonError(e instanceof Error ? e.message : "JSON tidak valid");
+    }
+  }, [jsonEditText, toast]);
 
   const handlePrint = useCallback(() => {
     if (!rpsData) return;
@@ -242,6 +326,11 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <PresetLibrary
+        open={presetOpen}
+        onOpenChange={setPresetOpen}
+        onSelect={handleSelectPreset}
+      />
       {/* LEFT: Form + Prompt Preview */}
       <div className="lg:col-span-5 space-y-6">
         <Card className="border-border/60 shadow-sm">
@@ -258,15 +347,26 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
                   </CardDescription>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleReset}
-                className="h-8 text-muted-foreground"
-              >
-                <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                Reset
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPresetOpen(true)}
+                  className="h-8 text-xs"
+                >
+                  <BookMarked className="h-3.5 w-3.5 mr-1.5" />
+                  Preset
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReset}
+                  className="h-8 text-muted-foreground"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  Reset
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -462,7 +562,7 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
 
             {/* View mode toggle */}
             {generatedData && (
-              <div className="flex items-center gap-1 mt-1">
+              <div className="flex items-center gap-1 mt-1 flex-wrap">
                 <div className="inline-flex items-center rounded-md border border-border/60 bg-muted/40 p-0.5">
                   <ViewToggleBtn
                     active={viewMode === "summary"}
@@ -477,6 +577,17 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
                     label="JSON"
                   />
                 </div>
+                {viewMode === "json" && !isEditingJson && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleStartEditJson}
+                    className="h-8 text-xs"
+                  >
+                    <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                    Edit JSON
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -491,7 +602,19 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
           </CardHeader>
           <CardContent>
             {!generatedData ? (
-              <EmptyState isGenerating={isGenerating} />
+              <EmptyState
+                isGenerating={isGenerating}
+                progress={genProgress}
+                statusText={genStatusText}
+              />
+            ) : viewMode === "json" && isEditingJson ? (
+              <JsonEditor
+                value={jsonEditText}
+                onChange={setJsonEditText}
+                error={jsonError}
+                onSave={handleSaveEditJson}
+                onCancel={handleCancelEditJson}
+              />
             ) : viewMode === "json" ? (
               <JsonPreview
                 data={generatedData}
@@ -562,32 +685,121 @@ function ViewToggleBtn({
   );
 }
 
-function EmptyState({ isGenerating }: { isGenerating: boolean }) {
+function EmptyState({
+  isGenerating,
+  progress,
+  statusText,
+}: {
+  isGenerating: boolean;
+  progress: number;
+  statusText: string;
+}) {
   return (
-    <div className="flex flex-col items-center justify-center text-center py-16 px-6 rounded-lg border border-dashed border-border/60 bg-muted/20">
+    <div className="flex flex-col items-center justify-center text-center py-16 px-6 rounded-lg border border-dashed border-border/60 bg-muted/20 relative overflow-hidden">
+      {isGenerating && (
+        <div className="absolute inset-0 bg-grid opacity-30" />
+      )}
       <div className="relative mb-4">
-        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full animate-pulse" />
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary"
+        >
           {isGenerating ? (
             <Loader2 className="h-8 w-8 animate-spin" />
           ) : (
             <Sparkles className="h-8 w-8" />
           )}
-        </div>
+        </motion.div>
       </div>
-      <h3 className="text-base font-semibold text-foreground">
+      <h3 className="text-base font-semibold text-foreground relative">
         {isGenerating ? "Sedang men-generate RPS..." : "Belum ada hasil RPS"}
       </h3>
-      <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+      <p className="text-sm text-muted-foreground mt-1 max-w-sm relative">
         {isGenerating
-          ? "AI sedang menyusun RPS berbasis OBE. Mohon tunggu sebentar."
+          ? statusText || "AI sedang menyusun RPS berbasis OBE. Mohon tunggu sebentar."
           : "Isi form di samping lalu klik tombol “Generate RPS dengan AI” untuk membuat RPS."}
       </p>
       {isGenerating && (
-        <div className="mt-4 flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
-          <span className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
-          <span className="h-2 w-2 rounded-full bg-primary animate-bounce" />
+        <div className="mt-5 w-full max-w-xs relative space-y-2">
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <motion.div
+              className="h-full bg-primary rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" />
+            </span>
+            <span className="font-mono">{progress}%</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function JsonEditor({
+  value,
+  onChange,
+  error,
+  onSave,
+  onCancel,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  error: string | null;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Pencil className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs font-medium">Edit JSON Manual</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" onClick={onCancel} className="h-7 text-xs">
+            <X className="h-3 w-3 mr-1" />
+            Batal
+          </Button>
+          <Button size="sm" onClick={onSave} className="h-7 text-xs">
+            <Check className="h-3 w-3 mr-1" />
+            Simpan Perubahan
+          </Button>
+        </div>
+      </div>
+      <div className="relative">
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          spellCheck={false}
+          className="w-full h-[60vh] rounded-md border bg-[#282c34] text-zinc-100 font-mono text-[12.5px] leading-relaxed p-4 outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+          style={{ tabSize: 2 }}
+        />
+      </div>
+      {error ? (
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3">
+          <p className="text-xs font-medium text-destructive flex items-center gap-1.5">
+            <XCircle className="h-3.5 w-3.5" />
+            Error parsing JSON
+          </p>
+          <p className="text-[11px] text-destructive/80 mt-1 font-mono break-all">{error}</p>
+        </div>
+      ) : (
+        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3">
+          <p className="text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            JSON valid &mdash; klik “Simpan Perubahan” untuk menerapkan.
+          </p>
         </div>
       )}
     </div>
