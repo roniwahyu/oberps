@@ -515,3 +515,88 @@ Unresolved Issues / Next Phase Priorities:
 - Could add: drag-and-drop reordering of saved RPS
 - Consider adding: batch delete with selection checkboxes
 - Could add: RPS versioning/history (track edits to saved RPS)
+
+---
+Task ID: 12
+Agent: webDevReview Cron Agent (Round 5)
+Task: QA assessment, edit metadata, batch delete, prompt templates, styling improvements
+
+Work Log:
+- Reviewed worklog.md — project was STABLE at 8-9/10 polish (v1.4) after Round 4
+- QA via agent-browser + VLM: confirmed all Round 4 features working
+- Identified next priorities: edit metadata, batch delete, prompt templates, selection mode
+
+New Features Added:
+1. Edit RPS Metadata (src/app/api/rps/[id]/route.ts PATCH + src/components/rps/rps-edit-dialog.tsx):
+   - PATCH /api/rps/[id] endpoint for partial updates (mataKuliah, sks, semester, programStudi, deskripsi, promptText, jsonData)
+   - Only provided fields are updated (true PATCH semantics)
+   - Edit dialog with pre-filled form (Mata Kuliah, SKS, Semester, Program Studi, Deskripsi)
+   - "Edit metadata" button (pencil icon) on each saved card
+   - Toast: "Tersimpan! Metadata ... telah diperbarui."
+2. Batch Delete (src/app/api/rps/batch-delete/route.ts + selection mode in saved-list):
+   - POST /api/rps/batch-delete accepts { ids: string[] }, uses deleteMany
+   - Selection mode toggle button ("Pilih") in Saved tab toolbar
+   - When enabled: cards show checkbox (CheckSquare/Square), click to toggle
+   - Selected cards get ring-2 ring-primary highlight
+   - Selection action bar: "Pilih semua" / "Batal pilih semua", count display, "Hapus (N)" button with AlertDialog confirmation
+   - Batch delete button disabled when 0 selected, shows spinner when deleting
+   - Action buttons (Edit/Print/Download/Copy/Detail) hidden in selection mode
+3. Prompt Templates (src/lib/rps-template.ts):
+   - 4 template variants: Standar, Ringkas, Detail, Berbasis Proyek
+   - Each template has extraInstructions appended to master prompt:
+     * Standar: default OBE structure
+     * Ringkas: concise descriptions, max 5-7 materi, simple bobot distribution
+     * Detail: full descriptions, SMART indicators, explicit learning experiences, 3-4 references
+     * Berbasis Proyek: Project-Based Learning structure with milestones, proyek 40% bobot
+   - Template selector UI in Builder form (2x2 grid of selectable cards)
+   - Selected template highlighted with ring + CheckCircle2 icon
+   - Template ID sent to /api/rps/generate, master prompt preview updates live
+   - PROMPT_TEMPLATES array + TemplateId type exported
+
+Styling Improvements:
+- Saved cards: selection mode shows checkbox instead of book icon
+- Selected cards: ring-2 ring-primary border-primary + solid primary top bar
+- Selection action bar: border-primary/30 bg-primary/5 rounded-lg
+- Template selector: 2x2 grid of selectable cards with active ring state
+- About page: 17 features (was 14) — added Template Prompt, Edit Metadata RPS, Batch Delete
+- Version bumped to v1.5 (page.tsx, rps-about.tsx)
+
+New Files Created:
+- src/app/api/rps/batch-delete/route.ts
+- src/components/rps/rps-edit-dialog.tsx
+
+Modified Files:
+- src/app/api/rps/[id]/route.ts (added PATCH handler)
+- src/app/api/rps/generate/route.ts (accept templateId)
+- src/lib/rps-template.ts (PROMPT_TEMPLATES, TemplateId, buildMasterPrompt with templateId)
+- src/components/rps/rps-builder.tsx (template selector UI, Layers3 import)
+- src/components/rps/rps-saved-list.tsx (selection mode, batch delete, edit button)
+- src/components/rps/rps-about.tsx (v1.5, 17 features, Layers3 + CheckSquare imports)
+- src/app/page.tsx (version v1.5)
+
+Verification Results:
+- bun run lint: PASSED
+- dev.log: clean compilation, no runtime errors
+- agent-browser E2E:
+  - Builder: 4 template selector buttons visible (Standar/Ringkas/Detail/Berbasis Proyek)
+  - Builder: 9/10 polish (VLM)
+  - Saved tab: "Pilih" button visible, selection mode works
+  - Selection: card click toggles selection, "Pilih (1)" count updates, "Hapus" button enables
+  - Selection: "Pilih semua" / "Batal pilih semua" toggle works
+  - Edit: "Edit metadata" pencil button on card, dialog opens with pre-filled fields
+  - About page: v1.5 badge in hero, 17 features, 9/10 quality (VLM)
+  - Mobile (375px): 8/10, fully responsive, no overflow
+- VLM assessment: 9/10 (Builder), 9/10 (About), 8/10 (mobile)
+
+Stage Summary:
+- 3 major new features: Edit Metadata, Batch Delete, Prompt Templates
+- Polish improved to 9/10 (Builder & About)
+- Version v1.5
+- Lint clean, dev server stable, responsive confirmed
+
+Unresolved Issues / Next Phase Priorities:
+- Could add: CPL/CPMK library — extract & reuse CPL/CPMK from saved RPS
+- Could add: RPS versioning/history (track edits to saved RPS jsonData)
+- Could add: drag-and-drop reordering of saved RPS
+- Could add: export to Word/Excel format, multi-language support (EN/ID toggle)
+- Consider adding: duplicate saved RPS (copy to new record) in Saved tab

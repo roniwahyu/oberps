@@ -57,7 +57,53 @@ export const RPS_JSON_TEMPLATE = `{
 /**
  * Build the master prompt with form values filled in
  */
-export function buildMasterPrompt(input: RPSFormInput): string {
+export type TemplateId = "standard" | "compact" | "detailed" | "project-based";
+
+export interface PromptTemplate {
+  id: TemplateId;
+  label: string;
+  description: string;
+  extraInstructions: string;
+}
+
+export const PROMPT_TEMPLATES: PromptTemplate[] = [
+  {
+    id: "standard",
+    label: "Standar",
+    description: "Template default OBE dengan struktur lengkap M1-M16.",
+    extraInstructions: "",
+  },
+  {
+    id: "compact",
+    label: "Ringkas",
+    description: "Versi ringkas — fokus pada inti CPL/CPMK, materi pokok, dan bobot. Minggu kosong tetap diisi namun dengan deskripsi singkat.",
+    extraInstructions: `\n\nMODE RINGKAS: Buat deskripsi yang singkat dan padat untuk setiap field. Hindari paragraf panjang. Materi pokok maksimal 5-7 item. Referensi utama maksimal 2. Bobot didistribusikan sederhana (mis. 5-10% per minggu pertemuan, UTS 25%, UAS 25%).`,
+  },
+  {
+    id: "detailed",
+    label: "Detail",
+    description: "Versi mendalam — deskripsi lengkap untuk setiap sub-CPMK, materi terstruktur dengan sub-bab, indikator terukur, dan pengalaman belajar eksplisit.",
+    extraInstructions: `\n\nMODE DETAIL: Berikan deskripsi yang sangat lengkap dan terstruktur untuk setiap field. Materi pokok harus detail dengan sub-bab. Indikator harus terukur (SMART). Pengalaman belajar harus eksplisit (ceramah, diskusi, praktikum, tugas). Referensi utama 3-4 buku/jurnal akademik. Rancangan tugas detail dengan kriteria penilaian spesifik.`,
+  },
+  {
+    id: "project-based",
+    label: "Berbasis Proyek",
+    description: "Fokus pada pembelajaran berbasis proyek — tugas besar sebagai komponen utama, minggu-minggu terstruktur milestone proyek.",
+    extraInstructions: `\n\nMODE BERBASIS PROYEK: Struktur pembelajaran berbasis proyek (Project-Based Learning). Minggu 1-3: pengenalan & perencanaan proyek. Minggu 4-7: implementasi bertahap dengan milestone. Minggu 8: UTS (presentasi progres). Minggu 9-14: pengembangan & pengujian. Minggu 15: final presentation. Minggu 16: UAS. Bobot: tugas proyek 40%, UTS 25%, UAS 25%, partisipasi 10%. Rancangan tugas harus berupa proyek nyata yang relevan dengan industri.`,
+  },
+];
+
+/**
+ * Build the master prompt with form values filled in.
+ * Optional templateId selects a prompt variant.
+ */
+export function buildMasterPrompt(
+  input: RPSFormInput,
+  templateId: TemplateId = "standard"
+): string {
+  const template =
+    PROMPT_TEMPLATES.find((t) => t.id === templateId) || PROMPT_TEMPLATES[0];
+
   return `Bertindaklah sebagai Pakar Kurikulum Perguruan Tinggi. Tugas Anda adalah merumuskan Rencana Pembelajaran Semester (RPS) berbasis OBE.
 
 Mata Kuliah: ${input.mataKuliah}
@@ -80,5 +126,6 @@ ATURAN MUTLAK:
 
 Gunakan persis struktur JSON berikut (tambah/kurangi isi array TAKSONOMI sesuai kebutuhan):
 
-${RPS_JSON_TEMPLATE}`;
+${RPS_JSON_TEMPLATE}${template.extraInstructions}`;
 }
+

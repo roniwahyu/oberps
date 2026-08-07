@@ -22,6 +22,7 @@ import {
   WandSparkles,
   Table2,
   Keyboard,
+  Layers3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,8 @@ import {
   DEFAULT_FORM_INPUT,
   RPSFormInput,
   buildMasterPrompt,
+  PROMPT_TEMPLATES,
+  TemplateId,
 } from "@/lib/rps-template";
 import { calculateBobot, toRpsData, RpsData, normalizeBobot } from "@/lib/rps-parser";
 import { CoursePreset } from "@/lib/course-presets";
@@ -102,6 +105,7 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
   const { toast } = useToast();
   const [form, setForm] = useState<RPSFormInput>(DEFAULT_FORM_INPUT);
   const [deskripsi, setDeskripsi] = useState("");
+  const [templateId, setTemplateId] = useState<TemplateId>("standard");
   const [generatedData, setGeneratedData] = useState<unknown>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -172,7 +176,10 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
     setViewMode("summary");
   }, [loadRequest]);
 
-  const livePrompt = useMemo(() => buildMasterPrompt(form), [form]);
+  const livePrompt = useMemo(
+    () => buildMasterPrompt(form, templateId),
+    [form, templateId]
+  );
 
   const rpsData: RpsData | null = useMemo(
     () => toRpsData(generatedData),
@@ -201,7 +208,7 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
       const res = await fetch("/api/rps/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, templateId }),
       });
       const json = await res.json();
 
@@ -515,6 +522,38 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
                 value={deskripsi}
                 onChange={(e) => setDeskripsi(e.target.value)}
               />
+            </div>
+
+            {/* Template selector */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <Layers3 className="h-3.5 w-3.5 text-primary" />
+                Template Prompt
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                {PROMPT_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => setTemplateId(tpl.id)}
+                    className={`text-left rounded-lg border p-2.5 transition-all ${
+                      templateId === tpl.id
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                        : "border-border/60 hover:border-primary/40 hover:bg-muted/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      {templateId === tpl.id && (
+                        <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
+                      )}
+                      <span className="text-xs font-semibold">{tpl.label}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed line-clamp-2">
+                      {tpl.description}
+                    </p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <Button

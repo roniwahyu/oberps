@@ -22,6 +22,8 @@ import {
   TrendingUp,
   Upload,
   GitCompareArrows,
+  Layers3,
+  CheckSquare,
 } from "lucide-react";
 import {
   Card,
@@ -93,6 +95,21 @@ const FEATURES = [
     icon: GitCompareArrows,
     title: "Bandingkan RPS",
     desc: "Pilih dua RPS tersimpan untuk melihat perbedaan field-nya secara side-by-side dengan status tambah/hapus/ubah.",
+  },
+  {
+    icon: Layers3,
+    title: "Template Prompt",
+    desc: "4 varian template: Standar, Ringkas, Detail, dan Berbasis Proyek — sesuaikan gaya RPS dengan kebutuhan.",
+  },
+  {
+    icon: Pencil,
+    title: "Edit Metadata RPS",
+    desc: "Perbarui mata kuliah, SKS, semester, prodi, dan deskripsi dari RPS yang sudah tersimpan tanpa generate ulang.",
+  },
+  {
+    icon: CheckSquare,
+    title: "Batch Delete",
+    desc: "Mode pilih multiple RPS untuk menghapus beberapa sekaligus dengan konfirmasi.",
   },
   {
     icon: Printer,
@@ -208,7 +225,7 @@ export function RpsAbout() {
                     SmartRPS Builder
                   </h2>
                   <Badge variant="secondary" className="text-[10px]">
-                    v1.4
+                    v1.5
                   </Badge>
                   <Badge variant="outline" className="text-[10px]">
                     OBE

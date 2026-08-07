@@ -22,6 +22,10 @@ import {
   XCircle,
   Filter,
   GitCompareArrows,
+  CheckSquare,
+  Square,
+  Pencil,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +69,7 @@ import { RpsSummary } from "./rps-summary";
 import { buildPrintHtml } from "./print-utils";
 import { RpsImportDialog } from "./rps-import-dialog";
 import { RpsCompareDialog } from "./rps-compare-dialog";
+import { RpsEditDialog } from "./rps-edit-dialog";
 import { toRpsData, calculateBobot } from "@/lib/rps-parser";
 import {
   Select,
@@ -100,8 +105,13 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
   const [detailItem, setDetailItem] = useState<SavedRps | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [editItem, setEditItem] = useState<SavedRps | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [bobotFilter, setBobotFilter] = useState<"all" | "valid" | "invalid">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "sks">("newest");
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -317,6 +327,77 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
     load();
   }, [load]);
 
+  const handleToggleSelection = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === filtered.length) {
+        return new Set();
+      }
+      return new Set(filtered.map((it) => it.id));
+    });
+  }, [filtered]);
+
+  const handleToggleSelectionMode = useCallback(() => {
+    setSelectionMode((prev) => {
+      if (prev) {
+        setSelectedIds(new Set());
+      }
+      return !prev;
+    });
+  }, []);
+
+  const handleBatchDelete = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setIsBatchDeleting(true);
+    try {
+      const res = await fetch("/api/rps/batch-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json?.error || "Gagal menghapus batch.");
+      }
+      toast({
+        title: "Terhapus",
+        description: `${json.deleted} RPS berhasil dihapus.`,
+      });
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+      load();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({
+        title: "Gagal menghapus",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsBatchDeleting(false);
+    }
+  }, [selectedIds, toast, load]);
+
+  const handleEdit = useCallback((item: SavedRps) => {
+    setEditItem(item);
+    setEditOpen(true);
+  }, []);
+
+  const handleEditSaved = useCallback(() => {
+    load();
+  }, [load]);
+
   return (
     <div className="space-y-5">
       <RpsImportDialog
@@ -328,6 +409,12 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
         open={compareOpen}
         onOpenChange={setCompareOpen}
         items={items}
+      />
+      <RpsEditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        item={editItem}
+        onSaved={handleEditSaved}
       />
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
@@ -406,6 +493,19 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
             <span className="hidden sm:inline">Bandingkan</span>
           </Button>
           <Button
+            variant={selectionMode ? "default" : "outline"}
+            size="sm"
+            onClick={handleToggleSelectionMode}
+            disabled={items.length === 0}
+            className="h-9"
+            title="Mode pilih multiple RPS"
+          >
+            <CheckSquare className="h-3.5 w-3.5 mr-1.5" />
+            <span className="hidden sm:inline">
+              {selectionMode ? `Pilih (${selectedIds.size})` : "Pilih"}
+            </span>
+          </Button>
+          <Button
             variant="outline"
             size="sm"
             onClick={handleBatchExport}
@@ -414,7 +514,7 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
             title="Ekspor semua RPS sebagai JSON"
           >
             <PackageOpen className="h-3.5 w-3.5 mr-1.5" />
-            <span className="hidden sm:inline">Ekspor Semua</span>
+            <span className="hidden sm:inline">Ekspor</span>
           </Button>
           <Button
             variant="outline"
@@ -428,6 +528,78 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
           </Button>
         </div>
       </div>
+
+      {/* Selection action bar */}
+      {selectionMode && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSelectAll}
+              className="inline-flex items-center gap-1.5 text-xs font-medium hover:text-primary transition-colors"
+            >
+              {selectedIds.size === filtered.length && filtered.length > 0 ? (
+                <CheckSquare className="h-3.5 w-3.5 text-primary" />
+              ) : (
+                <Square className="h-3.5 w-3.5" />
+              )}
+              {selectedIds.size === filtered.length && filtered.length > 0
+                ? "Batal pilih semua"
+                : "Pilih semua"}
+            </button>
+            <span className="text-xs text-muted-foreground">
+              {selectedIds.size} dari {filtered.length} dipilih
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleSelectionMode}
+              className="h-7 text-xs"
+            >
+              Batal
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={selectedIds.size === 0 || isBatchDeleting}
+                  className="h-7 text-xs"
+                >
+                  {isBatchDeleting ? (
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3 mr-1" />
+                  )}
+                  Hapus {selectedIds.size > 0 ? `(${selectedIds.size})` : ""}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Hapus {selectedIds.size} RPS?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tindakan ini tidak dapat dibatalkan.{" "}
+                    <span className="font-medium text-foreground">
+                      {selectedIds.size} RPS
+                    </span>{" "}
+                    akan dihapus permanen dari database.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleBatchDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Ya, Hapus Semua
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      )}
 
       {/* Stats row */}
       {items.length > 0 && (
@@ -479,11 +651,15 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
             <SavedCard
               key={item.id}
               item={item}
+              selectionMode={selectionMode}
+              selected={selectedIds.has(item.id)}
+              onToggleSelect={() => handleToggleSelection(item.id)}
               onView={() => setDetailItem(item)}
               onDelete={() => handleDelete(item.id, item.mataKuliah)}
               onPrint={() => handlePrint(item)}
               onDuplicate={() => handleDuplicate(item)}
               onExport={() => handleExportSingle(item)}
+              onEdit={() => handleEdit(item)}
             />
           ))}
         </div>
@@ -711,18 +887,26 @@ function Meta({
 
 function SavedCard({
   item,
+  selectionMode,
+  selected,
+  onToggleSelect,
   onView,
   onDelete,
   onPrint,
   onDuplicate,
   onExport,
+  onEdit,
 }: {
   item: SavedRps;
+  selectionMode: boolean;
+  selected: boolean;
+  onToggleSelect: () => void;
   onView: () => void;
   onDelete: () => void;
   onPrint: () => void;
   onDuplicate: () => void;
   onExport: () => void;
+  onEdit: () => void;
 }) {
   const bobot = useMemo(() => {
     const d = toRpsData(item.jsonData);
@@ -730,14 +914,35 @@ function SavedCard({
   }, [item.jsonData]);
 
   return (
-    <Card className="border-border/60 shadow-sm hover:shadow-md transition-all group overflow-hidden">
-      <div className="h-1 bg-gradient-to-r from-primary/60 to-primary/0" />
+    <Card
+      className={`border-border/60 shadow-sm hover:shadow-md transition-all group overflow-hidden ${
+        selected ? "ring-2 ring-primary border-primary" : ""
+      } ${selectionMode ? "cursor-pointer" : ""}`}
+      onClick={selectionMode ? onToggleSelect : undefined}
+    >
+      <div className={`h-1 ${selected ? "bg-primary" : "bg-gradient-to-r from-primary/60 to-primary/0"}`} />
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-start gap-2 min-w-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-              <BookOpen className="h-4 w-4" />
-            </div>
+            {selectionMode ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleSelect();
+                }}
+                className="shrink-0 mt-0.5"
+              >
+                {selected ? (
+                  <CheckSquare className="h-5 w-5 text-primary" />
+                ) : (
+                  <Square className="h-5 w-5 text-muted-foreground" />
+                )}
+              </button>
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <BookOpen className="h-4 w-4" />
+              </div>
+            )}
             <div className="min-w-0">
               <CardTitle
                 className="text-sm font-semibold leading-tight truncate"
@@ -750,8 +955,9 @@ function SavedCard({
               </CardDescription>
             </div>
           </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+          {!selectionMode && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
@@ -781,7 +987,8 @@ function SavedCard({
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
-          </AlertDialog>
+            </AlertDialog>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -814,39 +1021,50 @@ function SavedCard({
               year: "numeric",
             })}
           </span>
-          <div className="flex items-center gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onPrint}
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-              title="Cetak / Simpan PDF"
-            >
-              <Printer className="h-3 w-3" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onExport}
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-              title="Unduh JSON"
-            >
-              <Download className="h-3 w-3" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onDuplicate}
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-              title="Salin ke Builder"
-            >
-              <Copy className="h-3 w-3" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={onView} className="h-7 text-xs">
-              <Eye className="h-3 w-3 mr-1" />
-              Detail
-            </Button>
-          </div>
+          {!selectionMode && (
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onEdit}
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                title="Edit metadata"
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onPrint}
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                title="Cetak / Simpan PDF"
+              >
+                <Printer className="h-3 w-3" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onExport}
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                title="Unduh JSON"
+              >
+                <Download className="h-3 w-3" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onDuplicate}
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                title="Salin ke Builder"
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+              <Button size="sm" variant="outline" onClick={onView} className="h-7 text-xs">
+                <Eye className="h-3 w-3 mr-1" />
+                Detail
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

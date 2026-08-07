@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import ZAI from "z-ai-web-dev-sdk";
-import { buildMasterPrompt, RPSFormInput } from "@/lib/rps-template";
+import { buildMasterPrompt, RPSFormInput, TemplateId } from "@/lib/rps-template";
+
+interface GenerateBody extends RPSFormInput {
+  templateId?: TemplateId;
+}
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
@@ -16,7 +20,7 @@ const RETRY_DELAY_MS = 1500;
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as RPSFormInput;
+    const body = (await req.json()) as GenerateBody;
 
     // Validate input
     if (!body?.mataKuliah || !body?.sks || !body?.semester || !body?.programStudi) {
@@ -26,7 +30,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const prompt = buildMasterPrompt(body);
+    const templateId: TemplateId =
+      (["standard", "compact", "detailed", "project-based"].includes(
+        body.templateId as string
+      ) &&
+        (body.templateId as TemplateId)) ||
+      "standard";
+
+    const prompt = buildMasterPrompt(body, templateId);
 
     const zai = await ZAI.create();
 
