@@ -20,6 +20,8 @@ import {
   WandSparkles,
   BookOpen,
   TrendingUp,
+  Upload,
+  GitCompareArrows,
 } from "lucide-react";
 import {
   Card,
@@ -81,6 +83,16 @@ const FEATURES = [
     icon: PackageOpen,
     title: "Ekspor Batch & Individual",
     desc: "Unduh satu RPS sebagai JSON, atau ekspor semua RPS tersimpan sekaligus dalam satu file.",
+  },
+  {
+    icon: Upload,
+    title: "Impor dari JSON",
+    desc: "Unggah file JSON berisi RPS (satu atau batch) untuk diimpor ke database. Pratinjau otomatis sebelum impor.",
+  },
+  {
+    icon: GitCompareArrows,
+    title: "Bandingkan RPS",
+    desc: "Pilih dua RPS tersimpan untuk melihat perbedaan field-nya secara side-by-side dengan status tambah/hapus/ubah.",
   },
   {
     icon: Printer,
@@ -196,7 +208,7 @@ export function RpsAbout() {
                     SmartRPS Builder
                   </h2>
                   <Badge variant="secondary" className="text-[10px]">
-                    v1.3
+                    v1.4
                   </Badge>
                   <Badge variant="outline" className="text-[10px]">
                     OBE

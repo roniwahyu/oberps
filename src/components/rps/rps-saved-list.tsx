@@ -16,6 +16,12 @@ import {
   ExternalLink,
   Download,
   PackageOpen,
+  Upload,
+  ArrowDownUp,
+  CheckCircle2,
+  XCircle,
+  Filter,
+  GitCompareArrows,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +63,16 @@ import { useToast } from "@/hooks/use-toast";
 import { JsonPreview } from "./json-preview";
 import { RpsSummary } from "./rps-summary";
 import { buildPrintHtml } from "./print-utils";
+import { RpsImportDialog } from "./rps-import-dialog";
+import { RpsCompareDialog } from "./rps-compare-dialog";
 import { toRpsData, calculateBobot } from "@/lib/rps-parser";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SavedRps {
   id: string;
@@ -83,6 +98,10 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [detailItem, setDetailItem] = useState<SavedRps | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [bobotFilter, setBobotFilter] = useState<"all" | "valid" | "invalid">("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "sks">("newest");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -234,17 +253,50 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
     URL.revokeObjectURL(url);
   }, []);
 
-  const filtered = items.filter((it) => {
+  const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      it.mataKuliah.toLowerCase().includes(q) ||
-      it.programStudi.toLowerCase().includes(q) ||
-      it.semester.includes(q)
-    );
-  });
+    let result = items.filter((it) => {
+      const matchSearch =
+        !q ||
+        it.mataKuliah.toLowerCase().includes(q) ||
+        it.programStudi.toLowerCase().includes(q) ||
+        it.semester.includes(q);
+      if (!matchSearch) return false;
 
-  // Stats
+      if (bobotFilter !== "all") {
+        const d = toRpsData(it.jsonData);
+        const b = d ? calculateBobot(d) : null;
+        if (!b) return false;
+        if (bobotFilter === "valid" && !b.isValid) return false;
+        if (bobotFilter === "invalid" && b.isValid) return false;
+      }
+      return true;
+    });
+
+    // Sort
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        case "name":
+          return a.mataKuliah.localeCompare(b.mataKuliah);
+        case "sks":
+          return (parseInt(b.sks, 10) || 0) - (parseInt(a.sks, 10) || 0);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [items, search, bobotFilter, sortBy]);
+
+  // Stats (computed from all items, not filtered)
   const stats = useMemo(() => {
     const total = items.length;
     const prodiCount = new Set(items.map((i) => i.programStudi)).size;
@@ -252,11 +304,31 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
       (sum, it) => sum + (parseInt(it.sks, 10) || 0),
       0
     );
-    return { total, prodiCount, totalSks };
+    let validBobot = 0;
+    for (const it of items) {
+      const d = toRpsData(it.jsonData);
+      const b = d ? calculateBobot(d) : null;
+      if (b?.isValid) validBobot++;
+    }
+    return { total, prodiCount, totalSks, validBobot };
   }, [items]);
+
+  const handleImported = useCallback(() => {
+    load();
+  }, [load]);
 
   return (
     <div className="space-y-5">
+      <RpsImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={handleImported}
+      />
+      <RpsCompareDialog
+        open={compareOpen}
+        onOpenChange={setCompareOpen}
+        items={items}
+      />
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -267,7 +339,7 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
             Daftar RPS yang sudah Anda buat dan simpan ke database lokal.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -277,6 +349,62 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
               className="pl-8 h-9 w-56"
             />
           </div>
+          {/* Bobot filter */}
+          <Select
+            value={bobotFilter}
+            onValueChange={(v) =>
+              setBobotFilter(v as "all" | "valid" | "invalid")
+            }
+          >
+            <SelectTrigger className="h-9 w-[130px] text-xs">
+              <Filter className="h-3.5 w-3.5 mr-1.5" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Bobot</SelectItem>
+              <SelectItem value="valid">Bobot Valid</SelectItem>
+              <SelectItem value="invalid">Bobot Invalid</SelectItem>
+            </SelectContent>
+          </Select>
+          {/* Sort */}
+          <Select
+            value={sortBy}
+            onValueChange={(v) =>
+              setSortBy(v as "newest" | "oldest" | "name" | "sks")
+            }
+          >
+            <SelectTrigger className="h-9 w-[130px] text-xs">
+              <ArrowDownUp className="h-3.5 w-3.5 mr-1.5" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Terbaru</SelectItem>
+              <SelectItem value="oldest">Terlama</SelectItem>
+              <SelectItem value="name">Nama A-Z</SelectItem>
+              <SelectItem value="sks">SKS Tertinggi</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setImportOpen(true)}
+            className="h-9"
+            title="Impor RPS dari file JSON"
+          >
+            <Upload className="h-3.5 w-3.5 mr-1.5" />
+            <span className="hidden sm:inline">Impor</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCompareOpen(true)}
+            disabled={items.length < 2}
+            className="h-9"
+            title="Bandingkan dua RPS"
+          >
+            <GitCompareArrows className="h-3.5 w-3.5 mr-1.5" />
+            <span className="hidden sm:inline">Bandingkan</span>
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -303,7 +431,7 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
 
       {/* Stats row */}
       {items.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard
             icon={BookOpen}
             label="Total RPS"
@@ -321,6 +449,12 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
             label="Program Studi"
             value={String(stats.prodiCount)}
             color="text-amber-600 dark:text-amber-400"
+          />
+          <StatCard
+            icon={CheckCircle2}
+            label="Bobot Valid"
+            value={`${stats.validBobot}/${stats.total}`}
+            color="text-sky-600 dark:text-sky-400"
           />
         </div>
       )}

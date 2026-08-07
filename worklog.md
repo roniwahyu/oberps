@@ -418,3 +418,100 @@ Unresolved Issues / Next Phase Priorities:
 - Could add: RPS comparison/diff view, import RPS from JSON file, CPL/CPMK library from saved RPS
 - Consider adding search/filter by bobot validity in Saved tab
 - Could add: export to Word/Excel, multi-language support (EN/ID toggle)
+
+---
+Task ID: 11
+Agent: webDevReview Cron Agent (Round 4)
+Task: QA assessment, auto-retry for 502, import RPS, filter/sort, compare/diff, styling improvements
+
+Work Log:
+- Reviewed worklog.md — project was STABLE at 8-9/10 polish (v1.3) after Round 3
+- QA via agent-browser + VLM: confirmed all Round 3 features working
+- Identified next priorities: auto-retry for 502 errors, import from JSON, filter/sort, compare/diff
+
+Bug Fixes:
+- Fixed 502 error on /api/rps/generate: Added auto-retry logic (MAX_RETRIES=3)
+  - On parse failure or empty response, retries with increasingly explicit reminder
+  - Attempt 2: "Pada percobaan sebelumnya, jawaban Anda bukan JSON valid..."
+  - Attempt 3: "PERCABAIAN TERAKHIR. Jawab HANYA dengan JSON yang valid..."
+  - 1.5s delay between retries
+  - Returns attempts count in response
+  - Returns last error + raw if all retries fail
+
+New Features Added:
+1. Import RPS from JSON (src/app/api/rps/import/route.ts + src/components/rps/rps-import-dialog.tsx):
+   - POST /api/rps/import accepts single object, wrapped object, or array
+   - Auto-extracts mata kuliah metadata from jsonData fields (MATA_KULIAH, SKS, SEMESTER, PROGRAM_STUDI, PRODI, DESKRIPSI)
+   - Returns imported count + per-item errors
+   - Import dialog with:
+     * Drag-and-drop file upload zone
+     * JSON validation with error display
+     * Pratinjau (preview) list showing detected RPS items
+     * "Impor N RPS" button with count
+     * Success/error toast feedback
+   - "Impor" button in Saved tab toolbar
+2. Filter Saved RPS by Bobot Validity (in rps-saved-list.tsx):
+   - Filter dropdown: Semua Bobot / Bobot Valid / Bobot Invalid
+   - Filters based on calculateBobot() result
+   - Combined with search query
+3. Sort Saved RPS (in rps-saved-list.tsx):
+   - Sort dropdown: Terbaru (newest) / Terlama (oldest) / Nama A-Z / SKS Tertinggi
+   - Default: Terbaru
+4. RPS Comparison/Diff View (src/components/rps/rps-compare-dialog.tsx):
+   - Select two RPS from dropdowns (A → B)
+   - Compares 13 top-level fields + 16×10 weekly fields (M1-M16 × 10 fields)
+   - Status per field: same (green), changed (amber), added (emerald), removed (rose)
+   - Summary badges: N sama, N berubah, N ditambah, N dihapus
+   - Bobot comparison display (A: X% / B: Y%)
+   - Color-coded rows with status icons
+   - "Bandingkan" button in Saved tab toolbar (disabled when <2 RPS)
+5. 4th Stat Card (Bobot Valid):
+   - Added "Bobot Valid" stat card showing validBobot/total count
+   - Sky-blue color-coded icon
+   - Now 4 stats: Total RPS, Total SKS, Program Studi, Bobot Valid
+
+Styling Improvements:
+- Saved toolbar: filter + sort dropdowns with icons (Filter, ArrowDownUp)
+- Stats grid: changed from 3-col to 2-col on mobile, 4-col on sm+
+- About page: 14 features (was 12) — added Impor dari JSON, Bandingkan RPS
+- Version bumped to v1.4 (page.tsx, rps-about.tsx)
+
+New Files Created:
+- src/app/api/rps/import/route.ts
+- src/components/rps/rps-import-dialog.tsx
+- src/components/rps/rps-compare-dialog.tsx
+
+Modified Files:
+- src/app/api/rps/generate/route.ts (auto-retry logic)
+- src/components/rps/rps-saved-list.tsx (import, filter, sort, compare, 4th stat)
+- src/components/rps/rps-about.tsx (v1.4, 14 features, Upload + GitCompareArrows imports)
+- src/app/page.tsx (version v1.4)
+
+Verification Results:
+- bun run lint: PASSED
+- dev.log: clean compilation after initial ReferenceError (Upload not defined) was fixed by adding imports
+- agent-browser E2E:
+  - Builder tab: loads correctly
+  - Saved tab: 4 stat cards visible (Total RPS, Total SKS, Prodi, Bobot Valid 0/1)
+  - Saved tab: Filter dropdown "Semua Bobot" visible
+  - Saved tab: Sort dropdown "Terbaru" visible
+  - Saved tab: "Impor" button visible, dialog opens with file upload zone
+  - Saved tab: "Bandingkan" button visible (disabled with <2 RPS)
+  - Saved tab: "Ekspor Semua" button visible
+  - About page: 14 features including Impor & Bandingkan, v1.4 badge, live stats
+  - Mobile (375px): fully responsive, 8/10 quality
+- VLM assessment: 9/10 (Saved list), 8/10 (mobile)
+
+Stage Summary:
+- 5 major new features: Auto-retry, Import, Filter, Sort, Compare/Diff
+- 1 bug fixed (502 retry)
+- Polish maintained at 8-9/10
+- Version v1.4
+- Lint clean, dev server stable, responsive confirmed
+
+Unresolved Issues / Next Phase Priorities:
+- Could add: export to Word/Excel format, multi-language support (EN/ID toggle)
+- Could add: RPS templates (multiple master prompt variants)
+- Could add: drag-and-drop reordering of saved RPS
+- Consider adding: batch delete with selection checkboxes
+- Could add: RPS versioning/history (track edits to saved RPS)
