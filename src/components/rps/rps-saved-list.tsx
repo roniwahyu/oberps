@@ -13,6 +13,7 @@ import {
   Inbox,
   Printer,
   Copy,
+  CopyPlus,
   ExternalLink,
   Download,
   PackageOpen,
@@ -207,6 +208,33 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
       });
     },
     [onDuplicate, toast]
+  );
+
+  const handleDuplicateRecord = useCallback(
+    async (item: SavedRps) => {
+      try {
+        const res = await fetch(`/api/rps/${item.id}/duplicate`, {
+          method: "POST",
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json?.error || "Gagal menduplikasi RPS.");
+        }
+        toast({
+          title: "Diduplikasi",
+          description: `Salinan "${item.mataKuliah}" telah dibuat.`,
+        });
+        load();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        toast({
+          title: "Gagal menduplikasi",
+          description: message,
+          variant: "destructive",
+        });
+      }
+    },
+    [toast, load]
   );
 
   const handleBatchExport = useCallback(() => {
@@ -658,6 +686,7 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
               onDelete={() => handleDelete(item.id, item.mataKuliah)}
               onPrint={() => handlePrint(item)}
               onDuplicate={() => handleDuplicate(item)}
+              onDuplicateRecord={() => handleDuplicateRecord(item)}
               onExport={() => handleExportSingle(item)}
               onEdit={() => handleEdit(item)}
             />
@@ -894,6 +923,7 @@ function SavedCard({
   onDelete,
   onPrint,
   onDuplicate,
+  onDuplicateRecord,
   onExport,
   onEdit,
 }: {
@@ -905,6 +935,7 @@ function SavedCard({
   onDelete: () => void;
   onPrint: () => void;
   onDuplicate: () => void;
+  onDuplicateRecord: () => void;
   onExport: () => void;
   onEdit: () => void;
 }) {
@@ -1058,6 +1089,15 @@ function SavedCard({
                 title="Salin ke Builder"
               >
                 <Copy className="h-3 w-3" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onDuplicateRecord}
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                title="Duplikasi sebagai RPS baru"
+              >
+                <CopyPlus className="h-3 w-3" />
               </Button>
               <Button size="sm" variant="outline" onClick={onView} className="h-7 text-xs">
                 <Eye className="h-3 w-3 mr-1" />

@@ -600,3 +600,77 @@ Unresolved Issues / Next Phase Priorities:
 - Could add: drag-and-drop reordering of saved RPS
 - Could add: export to Word/Excel format, multi-language support (EN/ID toggle)
 - Consider adding: duplicate saved RPS (copy to new record) in Saved tab
+
+---
+Task ID: 13
+Agent: webDevReview Cron Agent (Round 6)
+Task: QA assessment, duplicate record, CPL/CPMK library, toast styling, version v1.6
+
+Work Log:
+- Reviewed worklog.md — project was STABLE at 9/10 polish (v1.5) after Round 5
+- QA via agent-browser + VLM: confirmed all Round 5 features working
+- Identified next priorities: duplicate record, CPL/CPMK library, toast styling
+
+New Features Added:
+1. Duplicate RPS as New Record (src/app/api/rps/[id]/duplicate/route.ts):
+   - POST /api/rps/[id]/duplicate creates a copy with "(Salinan)" suffix
+   - Copies all fields: mataKuliah, sks, semester, programStudi, deskripsi, promptText, jsonData
+   - handleDuplicateRecord in saved-list with toast "Diduplikasi. Salinan ... telah dibuat."
+   - CopyPlus icon button on each saved card (title="Duplikasi sebagai RPS baru")
+   - Auto-refreshes list after duplication
+2. CPL/CPMK Library (src/app/api/rps/library/route.ts + src/components/rps/cpl-cpmk-library.tsx):
+   - GET /api/rps/library extracts CPL_PRODI & CPMK from all saved RPS
+   - Returns array of { sourceId, sourceMataKuliah, sourceProgramStudi, cplText, cpmkText }
+   - Library dialog with:
+     * Search across mata kuliah, prodi, CPL, CPMK text
+     * Expandable entries showing CPL & CPMK text in scrollable pre blocks
+     * Count badges (N CPL, N CPMK) per entry
+     * "Terapkan ke Builder" button per entry
+   - handleApplyCplCpmk merges CPL/CPMK into generatedData (preserves other fields)
+   - "CPL/CPMK" button in Builder form header (Library icon)
+   - Empty state when no saved RPS exist
+
+Styling Improvements:
+- Toast: added left border accent (before:bg-primary for default, before:bg-red-700 for destructive)
+- About page: 19 features (was 17) — added Duplikasi RPS, Pustaka CPL/CPMK
+- Version bumped to v1.6 (page.tsx, rps-about.tsx)
+- CopyPlus + Library icons added to imports
+
+New Files Created:
+- src/app/api/rps/[id]/duplicate/route.ts
+- src/app/api/rps/library/route.ts
+- src/components/rps/cpl-cpmk-library.tsx
+
+Modified Files:
+- src/components/ui/toast.tsx (left border accent)
+- src/components/rps/rps-saved-list.tsx (handleDuplicateRecord, CopyPlus button, CopyPlus import)
+- src/components/rps/rps-builder.tsx (CPL/CPMK library button + dialog, handleApplyCplCpmk, Library import)
+- src/components/rps/rps-about.tsx (v1.6, 19 features, CopyPlus + Library imports)
+- src/app/page.tsx (version v1.6)
+
+Verification Results:
+- bun run lint: PASSED
+- dev.log: clean compilation, no runtime errors
+- agent-browser E2E:
+  - Builder: "CPL/CPMK" button visible in form header
+  - CPL/CPMK library: dialog opens, shows entry from saved RPS, expandable with CPL/CPMK text, "Terapkan ke Builder" button
+  - Saved tab: "Duplikasi sebagai RPS baru" button visible on each card
+  - Duplicate record: clicked → toast "Diduplikasi. Salinan 'Rekayasa Perangkat Lunak' telah dibuat." → list now shows 2 cards (original + Salinan)
+  - Stats updated: Total RPS=2, Total SKS=6, Bobot Valid 0/2
+  - About page: v1.6 badge, 19 features, 9/10 quality (VLM)
+  - Mobile (375px): 8/10, fully responsive, no overflow
+- VLM assessment: 9/10 (About), 8/10 (mobile)
+
+Stage Summary:
+- 2 major new features: Duplicate Record, CPL/CPMK Library
+- Toast styling enhanced with left border accent
+- Polish maintained at 9/10
+- Version v1.6
+- Lint clean, dev server stable, responsive confirmed
+
+Unresolved Issues / Next Phase Priorities:
+- Could add: RPS statistics dashboard with charts (bobot distribution, SKS by prodi)
+- Could add: RPS versioning/history (track edits to saved RPS jsonData)
+- Could add: drag-and-drop reordering of saved RPS
+- Could add: export to Word/Excel format, multi-language support (EN/ID toggle)
+- Consider adding: global search across all RPS content (CPL, CPMK, materi, etc.)

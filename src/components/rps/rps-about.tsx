@@ -24,6 +24,8 @@ import {
   GitCompareArrows,
   Layers3,
   CheckSquare,
+  CopyPlus,
+  Library,
 } from "lucide-react";
 import {
   Card,
@@ -110,6 +112,16 @@ const FEATURES = [
     icon: CheckSquare,
     title: "Batch Delete",
     desc: "Mode pilih multiple RPS untuk menghapus beberapa sekaligus dengan konfirmasi.",
+  },
+  {
+    icon: CopyPlus,
+    title: "Duplikasi RPS",
+    desc: "Buat salinan RPS tersimpan sebagai record baru dengan satu klik — berguna untuk varian mata kuliah.",
+  },
+  {
+    icon: Library,
+    title: "Pustaka CPL/CPMK",
+    desc: "Ekstrak CPL & CPMK dari RPS tersimpan dan terapkan ulang ke Builder untuk mata kuliah baru.",
   },
   {
     icon: Printer,
@@ -225,7 +237,7 @@ export function RpsAbout() {
                     SmartRPS Builder
                   </h2>
                   <Badge variant="secondary" className="text-[10px]">
-                    v1.5
+                    v1.6
                   </Badge>
                   <Badge variant="outline" className="text-[10px]">
                     OBE

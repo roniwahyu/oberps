@@ -23,6 +23,7 @@ import {
   Table2,
   Keyboard,
   Layers3,
+  Library,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,7 @@ import { RpsSummary } from "./rps-summary";
 import { buildPrintHtml } from "./print-utils";
 import { PresetLibrary } from "./preset-library";
 import { WeeklyMatrixEditor } from "./weekly-matrix-editor";
+import { CplCpmkLibrary, LibraryEntry } from "./cpl-cpmk-library";
 
 export interface RpsLoadRequest {
   mataKuliah: string;
@@ -119,6 +121,7 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
   const [genStatusText, setGenStatusText] = useState("");
   const [matrixEditorOpen, setMatrixEditorOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [cplLibraryOpen, setCplLibraryOpen] = useState(false);
 
   // Simulated progress during generation
   useEffect(() => {
@@ -160,6 +163,24 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
       description: `Form diisi dengan ${preset.mataKuliah}.`,
     });
   }, [toast]);
+
+  const handleApplyCplCpmk = useCallback(
+    (entry: LibraryEntry) => {
+      // Merge CPL/CPMK into existing generatedData (or create a stub)
+      const existing =
+        (typeof generatedData === "object" && generatedData !== null
+          ? (generatedData as Record<string, unknown>)
+          : {}) as Record<string, unknown>;
+      const updated = {
+        ...existing,
+        CPL_PRODI: entry.cplText,
+        CPMK: entry.cpmkText,
+      };
+      setGeneratedData(updated);
+      setViewMode("summary");
+    },
+    [generatedData]
+  );
 
   // Load data from a saved RPS (duplicate / edit)
   useEffect(() => {
@@ -391,6 +412,11 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
         onOpenChange={setPresetOpen}
         onSelect={handleSelectPreset}
       />
+      <CplCpmkLibrary
+        open={cplLibraryOpen}
+        onOpenChange={setCplLibraryOpen}
+        onApply={handleApplyCplCpmk}
+      />
       {/* LEFT: Form + Prompt Preview */}
       <div className="lg:col-span-5 space-y-6">
         <Card className="border-border/60 shadow-sm">
@@ -416,6 +442,16 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
                 >
                   <BookMarked className="h-3.5 w-3.5 mr-1.5" />
                   Preset
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCplLibraryOpen(true)}
+                  className="h-8 text-xs text-muted-foreground"
+                  title="Pustaka CPL/CPMK dari RPS tersimpan"
+                >
+                  <Library className="h-3.5 w-3.5 mr-1.5" />
+                  CPL/CPMK
                 </Button>
                 <Button
                   variant="ghost"
