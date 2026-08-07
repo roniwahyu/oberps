@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   GraduationCap,
@@ -10,6 +10,7 @@ import {
   Github,
   Heart,
   Zap,
+  Search,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { RpsBuilder, RpsLoadRequest } from "@/components/rps/rps-builder";
 import { RpsSavedList } from "@/components/rps/rps-saved-list";
 import { RpsAbout } from "@/components/rps/rps-about";
+import { GlobalSearch } from "@/components/rps/global-search";
 
 interface SavedRpsLike {
   id: string;
@@ -36,6 +38,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("builder");
   const [savedRefreshKey, setSavedRefreshKey] = useState(0);
   const [loadRequest, setLoadRequest] = useState<RpsLoadRequest | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [focusRpsId, setFocusRpsId] = useState<string | null>(null);
 
   const handleSaved = useCallback(() => {
     setSavedRefreshKey((k) => k + 1);
@@ -62,8 +66,31 @@ export default function Home() {
     setActiveTab("builder");
   }, []);
 
+  const handleSearchSelect = useCallback((id: string) => {
+    setFocusRpsId(id);
+    setSavedRefreshKey((k) => k + 1);
+    setActiveTab("saved");
+  }, []);
+
+  // Global keyboard shortcut: Ctrl+Shift+F to open search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <GlobalSearch
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        onSelect={handleSearchSelect}
+      />
       {/* Header */}
       <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -92,6 +119,19 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSearchOpen(true)}
+              className="h-9 gap-1.5"
+              title="Pencarian global (Ctrl+Shift+F)"
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline text-xs">Cari</span>
+              <kbd className="hidden lg:inline ml-1 px-1 py-0.5 rounded border border-border/60 bg-muted font-mono text-[9px] text-muted-foreground">
+                ⌃⇧F
+              </kbd>
+            </Button>
             <ThemeToggle />
             <Button
               variant="ghost"
@@ -164,6 +204,7 @@ export default function Home() {
                 <RpsSavedList
                   refreshKey={savedRefreshKey}
                   onDuplicate={handleDuplicate}
+                  focusId={focusRpsId}
                 />
               </TabsContent>
 
@@ -183,7 +224,7 @@ export default function Home() {
               <GraduationCap className="h-3.5 w-3.5" />
             </div>
             <span>
-              SmartRPS Builder &middot; OBE Curriculum Framework &middot; v1.6
+              SmartRPS Builder &middot; OBE Curriculum Framework &middot; v1.7
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">

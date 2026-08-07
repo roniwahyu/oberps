@@ -674,3 +674,92 @@ Unresolved Issues / Next Phase Priorities:
 - Could add: drag-and-drop reordering of saved RPS
 - Could add: export to Word/Excel format, multi-language support (EN/ID toggle)
 - Consider adding: global search across all RPS content (CPL, CPMK, materi, etc.)
+
+---
+Task ID: 14
+Agent: webDevReview Cron Agent (Round 7)
+Task: QA assessment, statistics dashboard with charts, global search, version v1.7
+
+Work Log:
+- Reviewed worklog.md — project was STABLE at 9/10 polish (v1.6) after Round 6
+- QA via agent-browser + VLM: confirmed all Round 6 features working
+- Identified next priorities: statistics dashboard, global search
+
+New Features Added:
+1. Statistics Dashboard (src/app/api/rps/stats/route.ts + src/components/rps/stats-dashboard.tsx):
+   - GET /api/rps/stats aggregates: total, totalSks, prodiCount, bobotStat (valid/invalid),
+     byProdi (count + totalSks), bySemester, bySks, bobotDist (per-RPS bobot values), recentCount (7 days)
+   - Dashboard dialog with recharts visualizations:
+     * 4 top stat cards: Total RPS, Total SKS, Program Studi, Baru (7 hari)
+     * Pie chart: Validitas Bobot (valid vs invalid, donut style with legend)
+     * Bar chart: Distribusi Bobot per RPS (color-coded by validity)
+     * Horizontal bar chart: RPS per Program Studi (color-coded)
+     * Bar chart: RPS per Semester
+     * Detail per Prodi table (color dot, count badge, SKS badge)
+   - "Statistik" button in Saved tab toolbar (BarChart3 icon)
+   - Empty state when no saved RPS exist
+   - Loading state with spinner
+2. Global Search (src/app/api/rps/search/route.ts + src/components/rps/global-search.tsx):
+   - GET /api/rps/search?q=<query> searches across ALL RPS content:
+     * Metadata: mataKuliah, programStudi, deskripsi
+     * JSON fields: CPL_PRODI, CPMK, DESKRIPSI, MATERI_POKOK, REFERENSI_UTAMA,
+       REFERENSI_PENDUKUNG, INTEGRASI_RISPKM, RANCANGAN_TUGAS, RUBRIK_PENILAIAN,
+       MEDIA_LUNAK, MEDIA_KERAS, MK_SYARAT
+     * Weekly fields: M1-M16 × KEMAMPUAN, MATERI, INDIKATOR, METODE, MEDIA
+   - Returns matches with field label + text snippet (60-char radius around match)
+   - Global search dialog (command palette style):
+     * Debounced search (300ms)
+     * Auto-focus input on open
+     * Results show: mata kuliah, prodi, SKS, semester, match count badge
+     * Up to 3 match snippets per result with field label badge + monospace snippet
+     * "+N cocok lainnya" for additional matches
+     * Click result → switches to Saved tab + opens detail dialog
+   - "Cari" button in header with ⌃⇧F kbd hint
+   - Ctrl+Shift+F keyboard shortcut to open search
+   - focusId prop on RpsSavedList opens detail dialog for selected RPS
+
+Styling Improvements:
+- Header: added "Cari" button with kbd shortcut hint (⌃⇧F)
+- Stats dashboard: 4 stat mini cards, 4 chart cards, 1 detail table
+- About page: 21 features (was 19) — added Dashboard Statistik, Pencarian Global
+- About page: 7 keyboard shortcuts (added Ctrl+Shift+F Pencarian Global)
+- Version bumped to v1.7 (page.tsx, rps-about.tsx)
+- BarChart3 + Search icons added to imports
+
+New Files Created:
+- src/app/api/rps/stats/route.ts
+- src/app/api/rps/search/route.ts
+- src/components/rps/stats-dashboard.tsx
+- src/components/rps/global-search.tsx
+
+Modified Files:
+- src/components/rps/rps-saved-list.tsx (stats button + dialog, focusId prop + useEffect)
+- src/app/page.tsx (global search button + dialog, Ctrl+Shift+F shortcut, focusRpsId state, v1.7)
+- src/components/rps/rps-about.tsx (v1.7, 21 features, 7 shortcuts, BarChart3 + Search imports)
+
+Verification Results:
+- bun run lint: PASSED
+- dev.log: clean compilation, /api/rps/stats 200, /api/rps/search 200, no runtime errors
+- agent-browser E2E:
+  - Header: "Cari ⌃⇧F" button visible
+  - Global search: dialog opens, typed "rekayasa" → found 2 RPS with 7 matches each
+  - Search results: show mata kuliah, match count badge, field labels (Mata Kuliah, CPMK, Deskripsi), snippets
+  - Stats dashboard: dialog opens, 4 stat cards (Total=2, SKS=6, Prodi=1, Baru=2)
+  - Stats charts: pie chart (bobot validity), bar chart (bobot distribution), horizontal bar (per prodi), bar (per semester)
+  - Stats detail table: per prodi with color dots and badges
+  - About page: v1.7 badge, 21 features, 7 shortcuts
+  - Mobile (375px): 8/10, fully responsive, no overflow
+- VLM assessment: 9/10 (search dialog), 9/10 (stats dashboard), 8/10 (mobile)
+
+Stage Summary:
+- 2 major new features: Statistics Dashboard (with charts), Global Search (command palette)
+- Polish maintained at 9/10
+- Version v1.7
+- Lint clean, dev server stable, responsive confirmed
+
+Unresolved Issues / Next Phase Priorities:
+- Could add: RPS favorites/pinning (pin important RPS to top)
+- Could add: RPS versioning/history (track edits to saved RPS jsonData)
+- Could add: drag-and-drop reordering of saved RPS
+- Could add: export to Word/Excel format, multi-language support (EN/ID toggle)
+- Consider adding: recent activity feed on About page

@@ -16,6 +16,7 @@ import {
   CopyPlus,
   ExternalLink,
   Download,
+  BarChart3,
   PackageOpen,
   Upload,
   ArrowDownUp,
@@ -71,6 +72,7 @@ import { buildPrintHtml } from "./print-utils";
 import { RpsImportDialog } from "./rps-import-dialog";
 import { RpsCompareDialog } from "./rps-compare-dialog";
 import { RpsEditDialog } from "./rps-edit-dialog";
+import { StatsDashboard } from "./stats-dashboard";
 import { toRpsData, calculateBobot } from "@/lib/rps-parser";
 import {
   Select,
@@ -96,9 +98,10 @@ interface SavedRps {
 interface RpsSavedListProps {
   refreshKey: number;
   onDuplicate?: (item: SavedRps) => void;
+  focusId?: string | null;
 }
 
-export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
+export function RpsSavedList({ refreshKey, onDuplicate, focusId }: RpsSavedListProps) {
   const { toast } = useToast();
   const [items, setItems] = useState<SavedRps[]>([]);
   const [loading, setLoading] = useState(false);
@@ -106,6 +109,7 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
   const [detailItem, setDetailItem] = useState<SavedRps | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [editItem, setEditItem] = useState<SavedRps | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [bobotFilter, setBobotFilter] = useState<"all" | "valid" | "invalid">("all");
@@ -136,6 +140,16 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
   useEffect(() => {
     load();
   }, [load, refreshKey]);
+
+  // Open detail dialog when focusId is provided (from global search)
+  useEffect(() => {
+    if (focusId && items.length > 0) {
+      const found = items.find((it) => it.id === focusId);
+      if (found) {
+        setDetailItem(found);
+      }
+    }
+  }, [focusId, items]);
 
   const handleDelete = useCallback(
     async (id: string, name: string) => {
@@ -444,6 +458,7 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
         item={editItem}
         onSaved={handleEditSaved}
       />
+      <StatsDashboard open={statsOpen} onOpenChange={setStatsOpen} />
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -519,6 +534,17 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
           >
             <GitCompareArrows className="h-3.5 w-3.5 mr-1.5" />
             <span className="hidden sm:inline">Bandingkan</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setStatsOpen(true)}
+            disabled={items.length === 0}
+            className="h-9"
+            title="Lihat statistik RPS"
+          >
+            <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
+            <span className="hidden sm:inline">Statistik</span>
           </Button>
           <Button
             variant={selectionMode ? "default" : "outline"}

@@ -26,6 +26,8 @@ import {
   CheckSquare,
   CopyPlus,
   Library,
+  BarChart3,
+  Search,
 } from "lucide-react";
 import {
   Card,
@@ -124,6 +126,16 @@ const FEATURES = [
     desc: "Ekstrak CPL & CPMK dari RPS tersimpan dan terapkan ulang ke Builder untuk mata kuliah baru.",
   },
   {
+    icon: BarChart3,
+    title: "Dashboard Statistik",
+    desc: "Visualisasi data RPS dengan chart: distribusi prodi, semester, SKS, dan validitas bobot (pie & bar charts).",
+  },
+  {
+    icon: Search,
+    title: "Pencarian Global",
+    desc: "Cari di semua RPS tersimpan — CPL, CPMK, materi pokok, deskripsi, referensi, dan field mingguan. Pintasan Ctrl+Shift+F.",
+  },
+  {
     icon: Printer,
     title: "Cetak / Export PDF",
     desc: "Generate dokumen RPS siap cetak (A4) dengan 11 section terstruktur, badge bobot, dan styling profesional.",
@@ -155,6 +167,7 @@ const SHORTCUTS = [
   { keys: ["Ctrl", "S"], action: "Simpan RPS" },
   { keys: ["Ctrl", "K"], action: "Buka Pustaka Preset" },
   { keys: ["Ctrl", "P"], action: "Cetak / PDF" },
+  { keys: ["Ctrl", "Shift", "F"], action: "Pencarian Global" },
   { keys: ["Ctrl", "Shift", "V"], action: "Toggle Ringkasan/JSON" },
   { keys: ["Ctrl", "Shift", "R"], action: "Reset form" },
 ];
@@ -237,7 +250,7 @@ export function RpsAbout() {
                     SmartRPS Builder
                   </h2>
                   <Badge variant="secondary" className="text-[10px]">
-                    v1.6
+                    v1.7
                   </Badge>
                   <Badge variant="outline" className="text-[10px]">
                     OBE
