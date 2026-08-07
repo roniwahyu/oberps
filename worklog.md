@@ -322,3 +322,99 @@ Unresolved Issues / Next Phase Priorities:
 - Could add: RPS comparison/diff view, batch export, CPL/CPMK library from saved RPS, inline field editing
 - Consider adding keyboard shortcuts (Ctrl+Enter to generate, Ctrl+S to save)
 - The "regenerate bobot" feature (when total != 100) still not implemented — could add a fix button
+
+---
+Task ID: 10
+Agent: webDevReview Cron Agent (Round 3)
+Task: QA assessment, keyboard shortcuts, fix bobot, inline matrix editor, batch export, enhanced About page
+
+Work Log:
+- Reviewed worklog.md — project was STABLE at 8-9/10 polish (v1.2) after Round 2
+- QA via agent-browser + VLM: confirmed all Round 2 features working (dark mode, preset library, JSON editor, progress indicator)
+- Identified next priorities: keyboard shortcuts, fix bobot, inline matrix editor, batch export, enhanced About
+
+New Features Added:
+1. Keyboard Shortcuts System (src/hooks/use-keyboard-shortcuts.ts):
+   - Ctrl/Cmd+Enter : Generate RPS
+   - Ctrl/Cmd+S : Save RPS (prevents browser default)
+   - Ctrl/Cmd+K : Open Pustaka Preset
+   - Ctrl/Cmd+P : Print / PDF (prevents browser default)
+   - Ctrl/Cmd+Shift+V : Toggle Ringkasan/JSON view
+   - Ctrl/Cmd+Shift+R : Reset form
+   - Smart: ignores shortcuts when typing in inputs/textareas (except Ctrl+S/P)
+   - ShortcutsDialog component showing all shortcuts with kbd styling
+   - Keyboard icon button in Builder toolbar opens shortcuts dialog
+2. Fix/Normalize Bobot (src/lib/rps-parser.ts):
+   - normalizeBobot() function: proportionally scales all non-zero bobot values so total = 100
+   - Handles rounding drift by adjusting the largest value
+   - Returns changes array (week, from, to) for toast feedback
+   - "Fix Bobot" button appears in Builder toolbar only when bobot is invalid (≠100%)
+   - Toast: "Bobot dinormalisasi: Total 125% → 100%. 9 minggu disesuaikan."
+   - Button disappears after bobot becomes valid
+3. Inline Weekly Matrix Editor (src/components/rps/weekly-matrix-editor.tsx):
+   - Full-screen dialog with editable table for M1-M16
+   - Editable fields per week: Sub-CPSK, Materi, Indikator, Bobot, Metode, Waktu, Media
+   - Textareas for long text fields, Inputs for short fields
+   - Live bobot indicator at top (updates as you type)
+   - UTS/UAS rows highlighted
+   - Reset / Batal / Simpan buttons
+   - "Edit Matriks" button in Builder toolbar (summary view only)
+4. Batch Export (in rps-saved-list.tsx):
+   - "Ekspor Semua" button in Saved tab toolbar
+   - Downloads all saved RPS as a single JSON file (RPS_Export_YYYY-MM-DD.json)
+   - Each RPS includes: mataKuliah, sks, semester, programStudi, deskripsi, jsonData (parsed), createdAt
+   - Toast: "Ekspor berhasil. N RPS diekspor sebagai file JSON."
+5. Single RPS Export (in rps-saved-list.tsx):
+   - Download icon button on each saved card
+   - Downloads individual RPS JSON file (RPS_Mata_Kuliah.json)
+6. Enhanced About Page (src/components/rps/rps-about.tsx):
+   - Live stats from database: Total RPS, Total SKS, Program Studi count, Bobot Valid count
+   - Updated features grid: 12 features (was 4) including all v1.3 features
+   - Keyboard shortcuts reference section with kbd styling
+   - Grid background pattern in hero
+   - Version badge v1.3
+   - Database info footer
+
+Styling Improvements:
+- About page: grid background pattern, live stats cards with color-coded icons
+- Builder toolbar: added Edit Matriks, Fix Bobot (conditional), Keyboard buttons
+- Saved cards: added Download (single export) icon button
+- Tips card: updated with keyboard shortcut hints (kbd elements)
+- Version bumped to v1.3
+
+New Files Created:
+- src/hooks/use-keyboard-shortcuts.ts
+- src/components/rps/weekly-matrix-editor.tsx
+
+Modified Files:
+- src/lib/rps-parser.ts (added normalizeBobot, updateWeeklyField)
+- src/components/rps/rps-builder.tsx (keyboard shortcuts, fix bobot, matrix editor, shortcuts dialog)
+- src/components/rps/rps-saved-list.tsx (batch export, single export, download button)
+- src/components/rps/rps-about.tsx (live stats, 12 features, shortcuts section, v1.3)
+- src/app/page.tsx (version v1.3)
+
+Verification Results:
+- bun run lint: PASSED (fixed set-state-in-effect lint error in rps-about.tsx by inlining async fetch)
+- dev.log: clean compilation, no runtime errors
+  - Note: one 502 on /api/rps/generate (LLM returned unparseable JSON on first try), retry succeeded
+- agent-browser E2E:
+  - Builder: generate succeeds, Summary view renders
+  - Fix Bobot: clicked → "Total 125% → 100%. 9 minggu disesuaikan." → button disappears (bobot now valid)
+  - Edit Matriks: dialog opens with editable table, all 8 columns editable, live bobot indicator
+  - Keyboard shortcuts dialog: opens with 6 shortcuts listed
+  - Saved tab: "Ekspor Semua" button visible, per-card "Unduh JSON" button visible
+  - About page: live stats (1 RPS, 3 SKS, 1 Prodi, 0/1 Bobot Valid), 12 features, shortcuts section, rules
+  - Mobile (375px): 8/10, fully responsive single column, no overflow
+- VLM assessment: 8/10 (Builder), 9/10 (matrix editor), 9/10 (About page), 8/10 (mobile)
+
+Stage Summary:
+- 6 major new features: Keyboard shortcuts, Fix Bobot, Matrix editor, Batch export, Single export, Enhanced About
+- Polish maintained at 8-9/10
+- Version v1.3
+- Lint clean, dev server stable, responsive confirmed
+
+Unresolved Issues / Next Phase Priorities:
+- LLM occasionally returns 502 (unparseable JSON) on first try — could add auto-retry logic in API
+- Could add: RPS comparison/diff view, import RPS from JSON file, CPL/CPMK library from saved RPS
+- Consider adding search/filter by bobot validity in Saved tab
+- Could add: export to Word/Excel, multi-language support (EN/ID toggle)

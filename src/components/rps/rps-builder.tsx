@@ -19,6 +19,9 @@ import {
   RefreshCw,
   Check,
   X,
+  WandSparkles,
+  Table2,
+  Keyboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,18 +43,27 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   DEFAULT_FORM_INPUT,
   RPSFormInput,
   buildMasterPrompt,
 } from "@/lib/rps-template";
-import { calculateBobot, toRpsData, RpsData } from "@/lib/rps-parser";
+import { calculateBobot, toRpsData, RpsData, normalizeBobot } from "@/lib/rps-parser";
 import { CoursePreset } from "@/lib/course-presets";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { JsonPreview } from "./json-preview";
 import { RpsSummary } from "./rps-summary";
 import { buildPrintHtml } from "./print-utils";
 import { PresetLibrary } from "./preset-library";
+import { WeeklyMatrixEditor } from "./weekly-matrix-editor";
 
 export interface RpsLoadRequest {
   mataKuliah: string;
@@ -101,6 +113,8 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [genProgress, setGenProgress] = useState(0);
   const [genStatusText, setGenStatusText] = useState("");
+  const [matrixEditorOpen, setMatrixEditorOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   // Simulated progress during generation
   useEffect(() => {
@@ -323,6 +337,45 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
       win.print();
     }, 400);
   }, [rpsData, form, deskripsi, toast]);
+
+  const handleFixBobot = useCallback(() => {
+    if (!rpsData) return;
+    const result = normalizeBobot(rpsData);
+    if (result.changes.length === 0) {
+      toast({
+        title: "Bobot sudah valid",
+        description: "Total bobot sudah 100%, tidak perlu perbaikan.",
+      });
+      return;
+    }
+    setGeneratedData(result.data);
+    toast({
+      title: "Bobot dinormalisasi",
+      description: `Total ${result.oldTotal}% → ${result.newTotal}%. ${result.changes.length} minggu disesuaikan.`,
+    });
+  }, [rpsData, toast]);
+
+  const handleMatrixSave = useCallback(
+    (newData: RpsData) => {
+      setGeneratedData(newData);
+      toast({
+        title: "Matriks diperbarui",
+        description: "Perubahan matriks mingguan telah disimpan (lokal).",
+      });
+    },
+    [toast]
+  );
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onGenerate: () => handleGenerate(),
+    onSave: () => handleSave(),
+    onPreset: () => setPresetOpen(true),
+    onReset: () => handleReset(),
+    onPrint: () => handlePrint(),
+    onToggleView: () =>
+      setViewMode((m) => (m === "summary" ? "json" : "summary")),
+  });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -588,6 +641,38 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
                     Edit JSON
                   </Button>
                 )}
+                {viewMode === "summary" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setMatrixEditorOpen(true)}
+                    className="h-8 text-xs"
+                  >
+                    <Table2 className="h-3.5 w-3.5 mr-1.5" />
+                    Edit Matriks
+                  </Button>
+                )}
+                {bobot && !bobot.isValid && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleFixBobot}
+                    className="h-8 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300"
+                    title="Normalisasi bobot agar total = 100%"
+                  >
+                    <WandSparkles className="h-3.5 w-3.5 mr-1.5" />
+                    Fix Bobot
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShortcutsOpen(true)}
+                  className="h-8 text-xs"
+                  title="Pintasan keyboard"
+                >
+                  <Keyboard className="h-3.5 w-3.5" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -645,9 +730,10 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
                   <ul className="list-disc list-inside space-y-0.5 ml-1">
                     <li>Gunakan tab <span className="font-mono">Ringkasan</span> untuk melihat tampilan terformat RPS.</li>
                     <li>Gunakan tab <span className="font-mono">JSON</span> untuk melihat & menyalin data mentah JSON.</li>
-                    <li>Periksa badge bobot — total M1–M16 harus = 100%.</li>
+                    <li>Periksa badge bobot — total M1–M16 harus = 100%. Gunakan <span className="font-mono">Fix Bobot</span> jika tidak valid.</li>
+                    <li>Klik <span className="font-mono">Edit Matriks</span> untuk mengedit field mingguan secara langsung.</li>
                     <li>Klik <span className="font-mono">Cetak / PDF</span> untuk mencetak atau menyimpan sebagai PDF.</li>
-                    <li>Klik <span className="font-mono">Simpan</span> untuk menyimpan ke database lokal.</li>
+                    <li>Tekan <kbd className="px-1 py-0.5 rounded bg-muted border border-border/60 font-mono text-[10px]">Ctrl+Enter</kbd> untuk generate, <kbd className="px-1 py-0.5 rounded bg-muted border border-border/60 font-mono text-[10px]">Ctrl+S</kbd> untuk simpan.</li>
                   </ul>
                 </div>
               </div>
@@ -655,7 +741,74 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
           </Card>
         )}
       </div>
+
+      {/* Weekly Matrix Editor */}
+      {rpsData && (
+        <WeeklyMatrixEditor
+          data={rpsData}
+          open={matrixEditorOpen}
+          onOpenChange={setMatrixEditorOpen}
+          onSave={handleMatrixSave}
+        />
+      )}
+
+      {/* Keyboard Shortcuts Dialog */}
+      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
     </div>
+  );
+}
+
+function ShortcutsDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const shortcuts = [
+    { keys: ["Ctrl", "Enter"], action: "Generate RPS" },
+    { keys: ["Ctrl", "S"], action: "Simpan RPS" },
+    { keys: ["Ctrl", "K"], action: "Buka Pustaka Preset" },
+    { keys: ["Ctrl", "P"], action: "Cetak / PDF" },
+    { keys: ["Ctrl", "Shift", "V"], action: "Toggle Ringkasan/JSON" },
+    { keys: ["Ctrl", "Shift", "R"], action: "Reset form" },
+  ];
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Keyboard className="h-4 w-4 text-primary" />
+            Pintasan Keyboard
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Gunakan pintasan berikut untuk bekerja lebih cepat.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          {shortcuts.map((s, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between rounded-md border border-border/50 bg-muted/20 px-3 py-2"
+            >
+              <span className="text-sm text-foreground/90">{s.action}</span>
+              <div className="flex items-center gap-1">
+                {s.keys.map((k, j) => (
+                  <span key={j} className="flex items-center gap-1">
+                    {j > 0 && (
+                      <span className="text-muted-foreground text-[10px]">+</span>
+                    )}
+                    <kbd className="px-1.5 py-0.5 rounded border border-border/60 bg-background font-mono text-[10px] font-medium shadow-sm">
+                      {k}
+                    </kbd>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

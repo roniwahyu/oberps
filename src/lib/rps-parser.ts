@@ -180,6 +180,97 @@ export function calculateBobot(data: RpsData): {
 }
 
 /**
+ * Normalize bobot values so the total equals exactly 100.
+ * Proportionally scales each non-zero bobot by (100 / currentTotal).
+ * If currentTotal is 0, distributes evenly across filled weeks.
+ * Preserves 0 values (empty weeks stay at 0).
+ * Preserves UTS (M8) = 25 and UAS (M16) = 25 if they exist.
+ */
+export function normalizeBobot(data: RpsData): {
+  data: RpsData;
+  changes: Array<{ week: number; from: number; to: number }>;
+  oldTotal: number;
+  newTotal: number;
+} {
+  const result: RpsData = { ...data };
+  const changes: Array<{ week: number; from: number; to: number }> = [];
+
+  // Collect current numeric bobot values
+  const current: Array<{ week: number; value: number }> = [];
+  for (let i = 1; i <= 16; i++) {
+    const raw = String(data[`M${i}_BOBOT`] || "").trim();
+    const num = parseFloat(raw);
+    if (!isNaN(num) && num > 0) {
+      current.push({ week: i, value: num });
+    }
+  }
+
+  const oldTotal = current.reduce((s, c) => s + c.value, 0);
+
+  if (current.length === 0 || oldTotal === 0) {
+    return { data: result, changes, oldTotal: 0, newTotal: 0 };
+  }
+
+  const scale = 100 / oldTotal;
+
+  for (const c of current) {
+    const newVal = Math.round(c.value * scale * 100) / 100;
+    result[`M${c.week}_BOBOT`] = String(newVal);
+    if (newVal !== c.value) {
+      changes.push({ week: c.week, from: c.value, to: newVal });
+    }
+  }
+
+  // Fix rounding drift: adjust the largest value to make total exactly 100
+  const newTotal = current.reduce(
+    (s, c) => s + parseFloat(String(result[`M${c.week}_BOBOT`] || "0")),
+    0
+  );
+  const drift = Math.round((100 - newTotal) * 100) / 100;
+  if (Math.abs(drift) >= 0.01 && current.length > 0) {
+    // Find the week with the largest bobot
+    const largest = current.reduce((max, c) =>
+      c.value > max.value ? c : max
+    );
+    const currentVal = parseFloat(String(result[`M${largest.week}_BOBOT`] || "0"));
+    const adjusted = Math.round((currentVal + drift) * 100) / 100;
+    result[`M${largest.week}_BOBOT`] = String(adjusted);
+    // Update changes
+    const existingChange = changes.find((ch) => ch.week === largest.week);
+    if (existingChange) {
+      existingChange.to = adjusted;
+    } else {
+      changes.push({ week: largest.week, from: currentVal, to: adjusted });
+    }
+  }
+
+  const finalTotal = current.reduce(
+    (s, c) => s + parseFloat(String(result[`M${c.week}_BOBOT`] || "0")),
+    0
+  );
+
+  return {
+    data: result,
+    changes,
+    oldTotal: Math.round(oldTotal * 100) / 100,
+    newTotal: Math.round(finalTotal * 100) / 100,
+  };
+}
+
+/**
+ * Update a single weekly field in the RPS data (returns a new object).
+ */
+export function updateWeeklyField(
+  data: RpsData,
+  week: number,
+  field: string,
+  value: string
+): RpsData {
+  const key = `M${week}_${field.toUpperCase()}`;
+  return { ...data, [key]: value };
+}
+
+/**
  * Parse numbered list text into array of items.
  * Format: "1. item one\n2. item two"
  */

@@ -14,6 +14,8 @@ import {
   Printer,
   Copy,
   ExternalLink,
+  Download,
+  PackageOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -178,6 +180,60 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
     [onDuplicate, toast]
   );
 
+  const handleBatchExport = useCallback(() => {
+    if (items.length === 0) return;
+    const exportData = items.map((it) => ({
+      mataKuliah: it.mataKuliah,
+      sks: it.sks,
+      semester: it.semester,
+      programStudi: it.programStudi,
+      deskripsi: it.deskripsi,
+      jsonData: (() => {
+        try {
+          return JSON.parse(it.jsonData);
+        } catch {
+          return null;
+        }
+      })(),
+      createdAt: it.createdAt,
+    }));
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `RPS_Export_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({
+      title: "Ekspor berhasil",
+      description: `${items.length} RPS diekspor sebagai file JSON.`,
+    });
+  }, [items, toast]);
+
+  const handleExportSingle = useCallback((item: SavedRps) => {
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(item.jsonData);
+    } catch {
+      parsed = item.jsonData;
+    }
+    const blob = new Blob([JSON.stringify(parsed, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `RPS_${item.mataKuliah.replace(/\s+/g, "_")}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
   const filtered = items.filter((it) => {
     const q = search.toLowerCase().trim();
     if (!q) return true;
@@ -224,12 +280,23 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
           <Button
             variant="outline"
             size="sm"
+            onClick={handleBatchExport}
+            disabled={items.length === 0}
+            className="h-9"
+            title="Ekspor semua RPS sebagai JSON"
+          >
+            <PackageOpen className="h-3.5 w-3.5 mr-1.5" />
+            <span className="hidden sm:inline">Ekspor Semua</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={load}
             disabled={loading}
             className="h-9"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>
       </div>
@@ -282,6 +349,7 @@ export function RpsSavedList({ refreshKey, onDuplicate }: RpsSavedListProps) {
               onDelete={() => handleDelete(item.id, item.mataKuliah)}
               onPrint={() => handlePrint(item)}
               onDuplicate={() => handleDuplicate(item)}
+              onExport={() => handleExportSingle(item)}
             />
           ))}
         </div>
@@ -513,12 +581,14 @@ function SavedCard({
   onDelete,
   onPrint,
   onDuplicate,
+  onExport,
 }: {
   item: SavedRps;
   onView: () => void;
   onDelete: () => void;
   onPrint: () => void;
   onDuplicate: () => void;
+  onExport: () => void;
 }) {
   const bobot = useMemo(() => {
     const d = toRpsData(item.jsonData);
@@ -619,6 +689,15 @@ function SavedCard({
               title="Cetak / Simpan PDF"
             >
               <Printer className="h-3 w-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onExport}
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              title="Unduh JSON"
+            >
+              <Download className="h-3 w-3" />
             </Button>
             <Button
               size="sm"
