@@ -224,7 +224,7 @@ export default function Home() {
               <GraduationCap className="h-3.5 w-3.5" />
             </div>
             <span>
-              SmartRPS Builder &middot; OBE Curriculum Framework &middot; v1.7
+              SmartRPS Builder &middot; OBE Curriculum Framework &middot; v1.8
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">

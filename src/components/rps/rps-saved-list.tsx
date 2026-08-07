@@ -28,6 +28,8 @@ import {
   Square,
   Pencil,
   Loader2,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +76,7 @@ import { RpsCompareDialog } from "./rps-compare-dialog";
 import { RpsEditDialog } from "./rps-edit-dialog";
 import { StatsDashboard } from "./stats-dashboard";
 import { toRpsData, calculateBobot } from "@/lib/rps-parser";
+import { useFavorites } from "@/hooks/use-favorites";
 import {
   Select,
   SelectContent,
@@ -103,6 +106,12 @@ interface RpsSavedListProps {
 
 export function RpsSavedList({ refreshKey, onDuplicate, focusId }: RpsSavedListProps) {
   const { toast } = useToast();
+  const {
+    isFavorite,
+    toggleFavorite,
+    favoriteCount,
+    loaded: favoritesLoaded,
+  } = useFavorites();
   const [items, setItems] = useState<SavedRps[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -113,7 +122,7 @@ export function RpsSavedList({ refreshKey, onDuplicate, focusId }: RpsSavedListP
   const [editItem, setEditItem] = useState<SavedRps | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [bobotFilter, setBobotFilter] = useState<"all" | "valid" | "invalid">("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "sks">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "sks" | "favorites">("newest");
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
@@ -327,7 +336,17 @@ export function RpsSavedList({ refreshKey, onDuplicate, focusId }: RpsSavedListP
 
     // Sort
     result = [...result].sort((a, b) => {
+      // Favorites always on top (regardless of sort), then apply selected sort
+      const aFav = isFavorite(a.id) ? 0 : 1;
+      const bFav = isFavorite(b.id) ? 0 : 1;
+      if (aFav !== bFav) return aFav - bFav;
+
       switch (sortBy) {
+        case "favorites":
+          // Already grouped by favorites above; secondary sort by newest
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
         case "newest":
           return (
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -346,7 +365,7 @@ export function RpsSavedList({ refreshKey, onDuplicate, focusId }: RpsSavedListP
     });
 
     return result;
-  }, [items, search, bobotFilter, sortBy]);
+  }, [items, search, bobotFilter, sortBy, isFavorite]);
 
   // Stats (computed from all items, not filtered)
   const stats = useMemo(() => {
@@ -512,6 +531,7 @@ export function RpsSavedList({ refreshKey, onDuplicate, focusId }: RpsSavedListP
               <SelectItem value="oldest">Terlama</SelectItem>
               <SelectItem value="name">Nama A-Z</SelectItem>
               <SelectItem value="sks">SKS Tertinggi</SelectItem>
+              <SelectItem value="favorites">Favorit Pertama</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -707,6 +727,8 @@ export function RpsSavedList({ refreshKey, onDuplicate, focusId }: RpsSavedListP
               item={item}
               selectionMode={selectionMode}
               selected={selectedIds.has(item.id)}
+              isFavorite={isFavorite(item.id)}
+              onToggleFavorite={() => toggleFavorite(item.id)}
               onToggleSelect={() => handleToggleSelection(item.id)}
               onView={() => setDetailItem(item)}
               onDelete={() => handleDelete(item.id, item.mataKuliah)}
@@ -944,6 +966,8 @@ function SavedCard({
   item,
   selectionMode,
   selected,
+  isFavorite,
+  onToggleFavorite,
   onToggleSelect,
   onView,
   onDelete,
@@ -956,6 +980,8 @@ function SavedCard({
   item: SavedRps;
   selectionMode: boolean;
   selected: boolean;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
   onToggleSelect: () => void;
   onView: () => void;
   onDelete: () => void;
@@ -974,7 +1000,9 @@ function SavedCard({
     <Card
       className={`border-border/60 shadow-sm hover:shadow-md transition-all group overflow-hidden ${
         selected ? "ring-2 ring-primary border-primary" : ""
-      } ${selectionMode ? "cursor-pointer" : ""}`}
+      } ${isFavorite ? "ring-1 ring-amber-400/50 border-amber-400/40" : ""} ${
+        selectionMode ? "cursor-pointer" : ""
+      }`}
       onClick={selectionMode ? onToggleSelect : undefined}
     >
       <div className={`h-1 ${selected ? "bg-primary" : "bg-gradient-to-r from-primary/60 to-primary/0"}`} />
@@ -1013,6 +1041,27 @@ function SavedCard({
             </div>
           </div>
           {!selectionMode && (
+            <div className="flex items-center gap-0.5 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFavorite();
+                }}
+                className={`h-7 w-7 transition-opacity shrink-0 ${
+                  isFavorite
+                    ? "text-amber-500 hover:text-amber-600 opacity-100"
+                    : "text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100"
+                }`}
+                title={isFavorite ? "Lepas favorit" : "Sematkan sebagai favorit"}
+              >
+                {isFavorite ? (
+                  <Pin className="h-3.5 w-3.5 fill-current" />
+                ) : (
+                  <PinOff className="h-3.5 w-3.5" />
+                )}
+              </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
               <Button
@@ -1045,11 +1094,18 @@ function SavedCard({
               </AlertDialogFooter>
             </AlertDialogContent>
             </AlertDialog>
+            </div>
           )}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-wrap gap-1.5">
+          {isFavorite && (
+            <Badge className="text-[10px] font-normal bg-amber-500 hover:bg-amber-500 text-white">
+              <Pin className="h-3 w-3 mr-1 fill-current" />
+              Favorit
+            </Badge>
+          )}
           <Badge variant="secondary" className="text-[10px] font-normal">
             <Layers className="h-3 w-3 mr-1" />
             {item.sks} SKS

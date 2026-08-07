@@ -763,3 +763,76 @@ Unresolved Issues / Next Phase Priorities:
 - Could add: drag-and-drop reordering of saved RPS
 - Could add: export to Word/Excel format, multi-language support (EN/ID toggle)
 - Consider adding: recent activity feed on About page
+
+---
+Task ID: 15
+Agent: webDevReview Cron Agent (Round 8)
+Task: QA assessment, favorites/pinning, recent activity feed, version v1.8
+
+Work Log:
+- Reviewed worklog.md — project was STABLE at 9/10 polish (v1.7) after Round 7
+- QA via agent-browser + VLM: confirmed all Round 7 features working
+- Identified next priorities: favorites/pinning, recent activity feed
+
+New Features Added:
+1. RPS Favorites/Pinning (src/hooks/use-favorites.ts):
+   - useFavorites hook manages favorites Set in localStorage (key: smartrps-favorites)
+   - Lazy initializer reads from localStorage on first client render (avoids SSR hydration issues)
+   - Persists to localStorage on every change
+   - Returns: favorites Set, favoriteIds array, favoriteCount, toggleFavorite, isFavorite, clearFavorites
+   - Pin button (Pin/PinOff icon) on each saved card header
+   - Favorited cards: amber ring-1 border + amber "Favorit" badge with pin icon
+   - Pinned RPS always sorted to top regardless of sort option
+   - "Favorit Pertama" sort option in dropdown (secondary sort: newest)
+   - Pin button visible on hover (non-favorited) or always visible (favorited, amber color)
+   - Tooltip: "Sematkan sebagai favorit" / "Lepas favorit"
+2. Recent Activity Feed (on About page):
+   - Fetches 5 most recent RPS (sorted by createdAt desc)
+   - Displays as numbered list with mata kuliah, prodi, SKS, and time-ago
+   - Time-ago formatting: "Baru saja" / "N menit lalu" / "N jam lalu" / "N hari lalu" / date
+   - Each item: numbered circle (primary color), title, subtitle, time-ago
+   - Hover state with muted background
+   - Only shows when there are saved RPS
+   - "Aktivitas Terbaru" card at bottom of About page
+
+Styling Improvements:
+- Saved cards: amber ring + "Favorit" badge for pinned RPS
+- Pin button: amber when favorited, muted on hover when not
+- About page: 22 features (was 21) — added Favorit/Pin RPS
+- About page: Recent Activity feed card with numbered list
+- Version bumped to v1.8 (page.tsx, rps-about.tsx)
+- Pin + Clock icons added to imports
+
+New Files Created:
+- src/hooks/use-favorites.ts
+
+Modified Files:
+- src/components/rps/rps-saved-list.tsx (favorites hook, pin button, "Favorit Pertama" sort, isFavorite prop, favorite badge)
+- src/components/rps/rps-about.tsx (v1.8, 22 features, recent activity feed, Pin + Clock imports)
+- src/app/page.tsx (version v1.8)
+
+Verification Results:
+- bun run lint: PASSED (fixed use-favorites set-state-in-effect by using lazy initializer)
+- dev.log: clean compilation, no runtime errors
+- agent-browser E2E:
+  - Saved tab: "Sematkan sebagai favorit" button visible on both cards
+  - Pin toggle: clicked → "Lepas favorit" (unpin) → amber "Favorit" badge appears
+  - Favorited card: amber ring border + "Favorit" badge with pin icon (9/10 VLM)
+  - Sort dropdown: "Favorit Pertama" option available
+  - About page: v1.8 badge, 22 features, Favorit/Pin RPS feature card, Aktivitas Terbaru section
+  - Recent Activity: shows 5 most recent RPS with time-ago
+  - Mobile (375px): 8/10, fully responsive, no overflow
+- VLM assessment: 9/10 (favorites), 8/10 (mobile)
+
+Stage Summary:
+- 2 major new features: RPS Favorites/Pinning (localStorage), Recent Activity Feed
+- Polish maintained at 9/10
+- Version v1.8
+- Lint clean, dev server stable, responsive confirmed
+
+Unresolved Issues / Next Phase Priorities:
+- Could add: RPS tags/labels (categorize with custom tags)
+- Could add: RPS versioning/history (track edits to saved RPS jsonData)
+- Could add: drag-and-drop reordering of saved RPS
+- Could add: export to Word/Excel format, multi-language support (EN/ID toggle)
+- Consider adding: RPS sharing via URL (export to shareable link)

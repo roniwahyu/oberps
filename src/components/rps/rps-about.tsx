@@ -28,6 +28,8 @@ import {
   Library,
   BarChart3,
   Search,
+  Pin,
+  Clock,
 } from "lucide-react";
 import {
   Card,
@@ -136,6 +138,11 @@ const FEATURES = [
     desc: "Cari di semua RPS tersimpan — CPL, CPMK, materi pokok, deskripsi, referensi, dan field mingguan. Pintasan Ctrl+Shift+F.",
   },
   {
+    icon: Pin,
+    title: "Favorit / Pin RPS",
+    desc: "Sematkan RPS penting sebagai favorit — pinned RPS selalu diurutan teratas. Favorit disimpan di localStorage browser.",
+  },
+  {
     icon: Printer,
     title: "Cetak / Export PDF",
     desc: "Generate dokumen RPS siap cetak (A4) dengan 11 section terstruktur, badge bobot, dan styling profesional.",
@@ -183,6 +190,14 @@ interface SavedRpsLike {
   createdAt: string;
 }
 
+interface RecentItem {
+  id: string;
+  mataKuliah: string;
+  sks: string;
+  programStudi: string;
+  createdAt: string;
+}
+
 export function RpsAbout() {
   const [stats, setStats] = useState({
     total: 0,
@@ -190,6 +205,7 @@ export function RpsAbout() {
     prodiCount: 0,
     validBobot: 0,
   });
+  const [recent, setRecent] = useState<RecentItem[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -220,8 +236,24 @@ export function RpsAbout() {
             // skip
           }
         }
+        // Sort by createdAt desc, take 5 most recent
+        const recentItems = [...items]
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() -
+              new Date(a.createdAt).getTime()
+          )
+          .slice(0, 5)
+          .map((it) => ({
+            id: it.id,
+            mataKuliah: it.mataKuliah,
+            sks: it.sks,
+            programStudi: it.programStudi,
+            createdAt: it.createdAt,
+          }));
         if (!cancelled) {
           setStats({ total, totalSks, prodiCount, validBobot });
+          setRecent(recentItems);
         }
       } catch {
         // ignore
@@ -250,7 +282,7 @@ export function RpsAbout() {
                     SmartRPS Builder
                   </h2>
                   <Badge variant="secondary" className="text-[10px]">
-                    v1.7
+                    v1.8
                   </Badge>
                   <Badge variant="outline" className="text-[10px]">
                     OBE
@@ -436,6 +468,66 @@ export function RpsAbout() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Recent Activity */}
+      {recent.length > 0 && (
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" />
+              Aktivitas Terbaru
+            </CardTitle>
+            <CardDescription className="text-xs">
+              5 RPS yang terakhir dibuat atau disimpan.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            <div className="divide-y divide-border/40">
+              {recent.map((item, idx) => {
+                const date = new Date(item.createdAt);
+                const now = new Date();
+                const diffMs = now.getTime() - date.getTime();
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+                let timeAgo: string;
+                if (diffMins < 1) timeAgo = "Baru saja";
+                else if (diffMins < 60) timeAgo = `${diffMins} menit lalu`;
+                else if (diffHours < 24) timeAgo = `${diffHours} jam lalu`;
+                else if (diffDays < 7) timeAgo = `${diffDays} hari lalu`;
+                else
+                  timeAgo = date.toLocaleDateString("id-ID", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  });
+
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
+                        {item.mataKuliah}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {item.programStudi} &middot; {item.sks} SKS
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      {timeAgo}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
