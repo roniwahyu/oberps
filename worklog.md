@@ -6,8 +6,8 @@ Clone of https://smartrps.rifainstitute.com/ - RPS (Rencana Pembelajaran Semeste
 ## Tech Stack
 - Next.js 16 with App Router
 - TypeScript, Tailwind CSS 4, shadcn/ui (New York)
-- Prisma ORM (SQLite)
-- z-ai-web-dev-sdk for LLM (backend only)
+- Native SQLite Database (custom.db)
+- Standalone RPS Generator Engine & LLM API Support
 
 ---
 Task ID: 1
@@ -36,7 +36,7 @@ Work Log:
   - RPS_JSON_TEMPLATE constant (full JSON structure with M1-M16 fields)
   - buildMasterPrompt() function that fills placeholders with form values
 - Created src/app/api/rps/generate/route.ts:
-  - POST handler validates input, calls z-ai-web-dev-sdk LLM
+  - POST handler validates input, calls AI LLM API
   - System prompt forces pure JSON output
   - extractJson() helper strips markdown fences and extracts JSON object
   - Returns { success, prompt, data (parsed JSON), raw }

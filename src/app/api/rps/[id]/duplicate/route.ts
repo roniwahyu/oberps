@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/rps/[id]/duplicate
  * Creates a copy of an existing RPS record with "(Salinan)" suffix.

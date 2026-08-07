@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "SmartRPS Builder" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/favicon.ico",
   },
   openGraph: {
     title: "SmartRPS Builder - AI RPS Generator OBE",

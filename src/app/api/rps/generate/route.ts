@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import ZAI from "z-ai-web-dev-sdk";
 import { buildMasterPrompt, RPSFormInput, TemplateId } from "@/lib/rps-template";
+
+export const dynamic = "force-dynamic";
+import { generateFallbackRPS } from "@/lib/rps-generator-fallback";
 
 interface GenerateBody extends RPSFormInput {
   templateId?: TemplateId;
@@ -9,14 +11,44 @@ interface GenerateBody extends RPSFormInput {
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
 
+async function fetchAICompletion(systemPrompt: string, userPrompt: string): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY || process.env.GEMINI_API_KEY;
+  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+  const model = process.env.AI_MODEL || "gpt-4o-mini";
+
+  if (!apiKey) {
+    throw new Error("NO_API_KEY");
+  }
+
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.7,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`AI API Error (${res.status}): ${errText}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? "";
+}
+
 /**
  * POST /api/rps/generate
  * Generates an RPS JSON via LLM using the master prompt template.
- * Body: RPSFormInput { mataKuliah, sks, semester, programStudi }
- *
- * Includes auto-retry logic: if the LLM returns unparseable JSON,
- * the request is retried up to MAX_RETRIES times with an increasingly
- * explicit reminder to output pure JSON.
+ * Falls back to offline RPS generator if no LLM API key is configured.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -39,7 +71,21 @@ export async function POST(req: NextRequest) {
 
     const prompt = buildMasterPrompt(body, templateId);
 
-    const zai = await ZAI.create();
+    const apiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY || process.env.GEMINI_API_KEY;
+
+    // If no API key is set, use standalone internal RPS generator
+    if (!apiKey) {
+      console.log("[/api/rps/generate] No LLM API Key set, using standalone RPS generator engine.");
+      const fallbackData = generateFallbackRPS(body, templateId);
+      return NextResponse.json({
+        success: true,
+        prompt,
+        data: fallbackData,
+        raw: JSON.stringify(fallbackData, null, 2),
+        attempts: 1,
+        source: "standalone",
+      });
+    }
 
     const systemBase =
       "Anda adalah Pakar Kurikulum Perguruan Tinggi yang ahli dalam penyusunan RPS berbasis OBE (Outcome-Based Education). Anda HANYA boleh mengembalikan JSON murni tanpa teks tambahan, tanpa markdown code fence, tanpa penjelasan apa pun.";
@@ -57,15 +103,7 @@ export async function POST(req: NextRequest) {
             : "\n\nPERCABAIAN TERAKHIR. Jawab HANYA dengan JSON yang valid. Jangan tambahkan teks apapun sebelum atau sesudah JSON. Mulai langsung dengan { dan akhiri dengan }.";
 
       try {
-        const completion = await zai.chat.completions.create({
-          messages: [
-            { role: "assistant", content: systemBase },
-            { role: "user", content: prompt + retryReminder },
-          ],
-          thinking: { type: "disabled" },
-        });
-
-        const rawContent = completion.choices[0]?.message?.content ?? "";
+        const rawContent = await fetchAICompletion(systemBase, prompt + retryReminder);
 
         if (!rawContent || rawContent.trim().length === 0) {
           lastError = "Model mengembalikan respons kosong.";
@@ -82,6 +120,7 @@ export async function POST(req: NextRequest) {
               data: parsed,
               raw: rawContent,
               attempts: attempt,
+              source: "llm",
             });
           } catch {
             lastError = "Gagal memparse JSON dari respons model.";
@@ -103,22 +142,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // All retries failed
-    return NextResponse.json(
-      {
-        error:
-          lastError ||
-          "Gagal generate RPS setelah beberapa percobaan. Silakan coba lagi.",
-        raw: lastRaw,
-        attempts: MAX_RETRIES,
-      },
-      { status: 502 }
-    );
+    // If external LLM failed after retries, fallback gracefully to internal generator
+    console.warn("[/api/rps/generate] LLM failed after retries, falling back to standalone generator engine.");
+    const fallbackData = generateFallbackRPS(body, templateId);
+    return NextResponse.json({
+      success: true,
+      prompt,
+      data: fallbackData,
+      raw: JSON.stringify(fallbackData, null, 2),
+      attempts: MAX_RETRIES,
+      source: "standalone-fallback",
+    });
   } catch (err) {
     console.error("[/api/rps/generate] error:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
-      { error: "Terjadi kesalahan saat memanggil model AI.", detail: message },
+      { error: "Terjadi kesalahan saat memproses RPS.", detail: message },
       { status: 500 }
     );
   }
