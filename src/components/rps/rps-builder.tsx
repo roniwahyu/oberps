@@ -71,6 +71,8 @@ import { PresetLibrary } from "./preset-library";
 import { WeeklyMatrixEditor } from "./weekly-matrix-editor";
 import { CplCpmkLibrary, LibraryEntry } from "./cpl-cpmk-library";
 import { RpsShareDialog } from "./rps-share-dialog";
+import { loadStoredLLMConfig } from "./llm-settings";
+import { CurriculumUploader, loadStoredCurriculumContext, CurriculumContextData } from "./curriculum-uploader";
 
 export interface RpsLoadRequest {
   mataKuliah: string;
@@ -200,9 +202,11 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
     setViewMode("summary");
   }, [loadRequest]);
 
+  const [curriculumContext, setCurriculumContext] = useState<CurriculumContextData | null>(loadStoredCurriculumContext);
+
   const livePrompt = useMemo(
-    () => buildMasterPrompt(form, templateId),
-    [form, templateId]
+    () => buildMasterPrompt(form, templateId, curriculumContext?.rawSummary),
+    [form, templateId, curriculumContext]
   );
 
   const rpsData: RpsData | null = useMemo(
@@ -229,10 +233,16 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
     setGeneratedData(null);
 
     try {
+      const llmConfig = loadStoredLLMConfig();
       const res = await fetch("/api/rps/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, templateId }),
+        body: JSON.stringify({
+          ...form,
+          templateId,
+          llmConfig,
+          curriculumContextText: curriculumContext?.rawSummary,
+        }),
       });
       const json = await res.json();
 
@@ -409,7 +419,9 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div className="space-y-6">
+      <CurriculumUploader onCurriculumLoaded={setCurriculumContext} />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <PresetLibrary
         open={presetOpen}
         onOpenChange={setPresetOpen}
@@ -856,6 +868,7 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
 
       {/* Keyboard Shortcuts Dialog */}
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      </div>
     </div>
   );
 }

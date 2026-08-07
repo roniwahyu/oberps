@@ -13,6 +13,7 @@ import {
   Search,
   Share2,
   X,
+  Key,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { RpsBuilder, RpsLoadRequest } from "@/components/rps/rps-builder";
 import { RpsSavedList } from "@/components/rps/rps-saved-list";
 import { RpsAbout } from "@/components/rps/rps-about";
+import { LlmSettings } from "@/components/rps/llm-settings";
 import { GlobalSearch } from "@/components/rps/global-search";
 
 interface SavedRpsLike {
@@ -189,6 +191,16 @@ export default function Home() {
                 ⌃⇧F
               </kbd>
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveTab("settings")}
+              className="h-9 gap-1.5"
+              title="Pengaturan LLM API Token"
+            >
+              <Key className="h-3.5 w-3.5 text-primary" />
+              <span className="hidden sm:inline text-xs">Pengaturan LLM</span>
+            </Button>
             <ThemeToggle />
             <Button
               variant="ghost"
@@ -246,6 +258,10 @@ export default function Home() {
                 <BookOpen className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Tersimpan</span>
               </TabsTrigger>
+              <TabsTrigger value="settings" className="gap-1.5">
+                <Key className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Pengaturan LLM</span>
+              </TabsTrigger>
               <TabsTrigger value="about" className="gap-1.5">
                 <Info className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Tentang</span>
@@ -275,6 +291,10 @@ export default function Home() {
                   onDuplicate={handleDuplicate}
                   focusId={focusRpsId}
                 />
+              </TabsContent>
+
+              <TabsContent value="settings" className="mt-0 focus-visible:outline-none">
+                <LlmSettings />
               </TabsContent>
 
               <TabsContent value="about" className="mt-0 focus-visible:outline-none">
