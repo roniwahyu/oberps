@@ -30,6 +30,8 @@ import {
   Search,
   Pin,
   Clock,
+  Tag,
+  Share2,
 } from "lucide-react";
 import {
   Card,
@@ -141,6 +143,16 @@ const FEATURES = [
     icon: Pin,
     title: "Favorit / Pin RPS",
     desc: "Sematkan RPS penting sebagai favorit — pinned RPS selalu diurutan teratas. Favorit disimpan di localStorage browser.",
+  },
+  {
+    icon: Tag,
+    title: "Tags / Kategori RPS",
+    desc: "Beri tag pada RPS (Wajib, Pilihan, Proyek, dll.) untuk kategorisasi. Tag ditampilkan sebagai badge dan dapat difilter.",
+  },
+  {
+    icon: Share2,
+    title: "Bagikan via URL",
+    desc: "Generate tautan share yang berisi seluruh data RPS (Base64-encoded). Penerima membuka link → RPS otomatis dimuat di Builder.",
   },
   {
     icon: Printer,
@@ -282,7 +294,7 @@ export function RpsAbout() {
                     SmartRPS Builder
                   </h2>
                   <Badge variant="secondary" className="text-[10px]">
-                    v1.8
+                    v1.9
                   </Badge>
                   <Badge variant="outline" className="text-[10px]">
                     OBE

@@ -37,6 +37,7 @@ model RPS {
   deskripsi     String?
   promptText    String
   jsonData      String
+  tags          String   @default("")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

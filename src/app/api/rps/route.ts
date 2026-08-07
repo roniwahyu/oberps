@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
           typeof body.jsonData === "string"
             ? body.jsonData
             : JSON.stringify(body.jsonData, null, 2),
+        tags: body.tags ? String(body.tags) : "",
       },
     });
 

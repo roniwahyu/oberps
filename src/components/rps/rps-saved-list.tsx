@@ -30,6 +30,7 @@ import {
   Loader2,
   Pin,
   PinOff,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +76,9 @@ import { RpsImportDialog } from "./rps-import-dialog";
 import { RpsCompareDialog } from "./rps-compare-dialog";
 import { RpsEditDialog } from "./rps-edit-dialog";
 import { StatsDashboard } from "./stats-dashboard";
+import { RpsTagsDialog } from "./rps-tags-dialog";
 import { toRpsData, calculateBobot } from "@/lib/rps-parser";
+import { parseTags } from "@/lib/rps-tags";
 import { useFavorites } from "@/hooks/use-favorites";
 import {
   Select,
@@ -94,6 +97,7 @@ interface SavedRps {
   deskripsi: string | null;
   promptText: string;
   jsonData: string;
+  tags: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -121,6 +125,8 @@ export function RpsSavedList({ refreshKey, onDuplicate, focusId }: RpsSavedListP
   const [statsOpen, setStatsOpen] = useState(false);
   const [editItem, setEditItem] = useState<SavedRps | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [tagsItem, setTagsItem] = useState<SavedRps | null>(null);
+  const [tagsOpen, setTagsOpen] = useState(false);
   const [bobotFilter, setBobotFilter] = useState<"all" | "valid" | "invalid">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "sks" | "favorites">("newest");
   const [selectionMode, setSelectionMode] = useState(false);
@@ -455,6 +461,11 @@ export function RpsSavedList({ refreshKey, onDuplicate, focusId }: RpsSavedListP
     setEditOpen(true);
   }, []);
 
+  const handleEditTags = useCallback((item: SavedRps) => {
+    setTagsItem(item);
+    setTagsOpen(true);
+  }, []);
+
   const handleEditSaved = useCallback(() => {
     load();
   }, [load]);
@@ -475,6 +486,14 @@ export function RpsSavedList({ refreshKey, onDuplicate, focusId }: RpsSavedListP
         open={editOpen}
         onOpenChange={setEditOpen}
         item={editItem}
+        onSaved={handleEditSaved}
+      />
+      <RpsTagsDialog
+        open={tagsOpen}
+        onOpenChange={setTagsOpen}
+        rpsId={tagsItem?.id || null}
+        rpsName={tagsItem?.mataKuliah || ""}
+        currentTags={tagsItem?.tags || ""}
         onSaved={handleEditSaved}
       />
       <StatsDashboard open={statsOpen} onOpenChange={setStatsOpen} />
@@ -737,6 +756,7 @@ export function RpsSavedList({ refreshKey, onDuplicate, focusId }: RpsSavedListP
               onDuplicateRecord={() => handleDuplicateRecord(item)}
               onExport={() => handleExportSingle(item)}
               onEdit={() => handleEdit(item)}
+              onEditTags={() => handleEditTags(item)}
             />
           ))}
         </div>
@@ -976,6 +996,7 @@ function SavedCard({
   onDuplicateRecord,
   onExport,
   onEdit,
+  onEditTags,
 }: {
   item: SavedRps;
   selectionMode: boolean;
@@ -990,11 +1011,13 @@ function SavedCard({
   onDuplicateRecord: () => void;
   onExport: () => void;
   onEdit: () => void;
+  onEditTags: () => void;
 }) {
   const bobot = useMemo(() => {
     const d = toRpsData(item.jsonData);
     return d ? calculateBobot(d) : null;
   }, [item.jsonData]);
+  const tags = useMemo(() => parseTags(item.tags), [item.tags]);
 
   return (
     <Card
@@ -1125,6 +1148,16 @@ function SavedCard({
           <Badge variant="outline" className="text-[10px] font-normal">
             OBE
           </Badge>
+          {tags.map((tag) => (
+            <Badge
+              key={tag}
+              variant="outline"
+              className="text-[10px] font-normal text-primary border-primary/30 bg-primary/5"
+            >
+              <Tag className="h-2.5 w-2.5 mr-1" />
+              {tag}
+            </Badge>
+          ))}
         </div>
         <div className="flex items-center justify-between pt-1">
           <span className="text-[10px] text-muted-foreground">
@@ -1144,6 +1177,15 @@ function SavedCard({
                 title="Edit metadata"
               >
                 <Pencil className="h-3 w-3" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onEditTags}
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                title="Kelola tags"
+              >
+                <Tag className="h-3 w-3" />
               </Button>
               <Button
                 size="sm"

@@ -33,6 +33,7 @@ interface UpdateBody {
   deskripsi?: string | null;
   promptText?: string;
   jsonData?: unknown;
+  tags?: string;
 }
 
 /**
@@ -71,6 +72,9 @@ export async function PATCH(
         typeof body.jsonData === "string"
           ? body.jsonData
           : JSON.stringify(body.jsonData, null, 2);
+    }
+    if (body.tags !== undefined) {
+      updateData.tags = String(body.tags);
     }
 
     if (Object.keys(updateData).length === 0) {

@@ -24,6 +24,7 @@ import {
   Keyboard,
   Layers3,
   Library,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +70,7 @@ import { buildPrintHtml } from "./print-utils";
 import { PresetLibrary } from "./preset-library";
 import { WeeklyMatrixEditor } from "./weekly-matrix-editor";
 import { CplCpmkLibrary, LibraryEntry } from "./cpl-cpmk-library";
+import { RpsShareDialog } from "./rps-share-dialog";
 
 export interface RpsLoadRequest {
   mataKuliah: string;
@@ -122,6 +124,7 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
   const [matrixEditorOpen, setMatrixEditorOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [cplLibraryOpen, setCplLibraryOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Simulated progress during generation
   useEffect(() => {
@@ -751,6 +754,16 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={() => setShareOpen(true)}
+                  className="h-8 text-xs"
+                  title="Bagikan RPS via tautan"
+                >
+                  <Share2 className="h-3.5 w-3.5 mr-1.5" />
+                  Bagikan
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handlePrint}
                   className="h-8 ml-auto text-xs"
                 >
@@ -824,6 +837,20 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
           open={matrixEditorOpen}
           onOpenChange={setMatrixEditorOpen}
           onSave={handleMatrixSave}
+        />
+      )}
+
+      {/* Share Dialog */}
+      {generatedData && (
+        <RpsShareDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          mataKuliah={form.mataKuliah}
+          sks={form.sks}
+          semester={form.semester}
+          programStudi={form.programStudi}
+          deskripsi={deskripsi}
+          jsonData={typeof generatedData === "string" ? generatedData : JSON.stringify(generatedData)}
         />
       )}
 

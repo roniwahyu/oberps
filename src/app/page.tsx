@@ -11,6 +11,8 @@ import {
   Heart,
   Zap,
   Search,
+  Share2,
+  X,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -34,12 +36,67 @@ interface SavedRpsLike {
   updatedAt: string;
 }
 
+function parseShareParam(): {
+  loadRequest: RpsLoadRequest | null;
+  notice: string | null;
+} {
+  if (typeof window === "undefined") return { loadRequest: null, notice: null };
+  const params = new URLSearchParams(window.location.search);
+  const shareParam = params.get("share");
+  if (!shareParam) return { loadRequest: null, notice: null };
+
+  try {
+    let b64 = shareParam.replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    const json = decodeURIComponent(escape(atob(b64)));
+    const payload = JSON.parse(json) as {
+      v?: number;
+      mk?: string;
+      sks?: string;
+      smt?: string;
+      prodi?: string;
+      desc?: string;
+      data?: unknown;
+    };
+    const req: RpsLoadRequest = {
+      mataKuliah: payload.mk || "Mata Kuliah Impor",
+      sks: payload.sks || "3",
+      semester: payload.smt || "1",
+      programStudi: payload.prodi || "S1 Teknik Informatika",
+      deskripsi: payload.desc || "",
+      jsonData: payload.data || null,
+      promptText: "Dimuat dari tautan share",
+      nonce: Date.now(),
+    };
+    return {
+      loadRequest: req,
+      notice: `RPS "${payload.mk || "Mata Kuliah"}" dimuat dari tautan share`,
+    };
+  } catch {
+    return { loadRequest: null, notice: null };
+  }
+}
+
 export default function Home() {
+  // Parse share URL once on initial render (client-only, lazy initializer)
+  const initialShare = useState(parseShareParam)[0];
   const [activeTab, setActiveTab] = useState("builder");
   const [savedRefreshKey, setSavedRefreshKey] = useState(0);
-  const [loadRequest, setLoadRequest] = useState<RpsLoadRequest | null>(null);
+  const [loadRequest, setLoadRequest] = useState<RpsLoadRequest | null>(
+    initialShare.loadRequest
+  );
   const [searchOpen, setSearchOpen] = useState(false);
   const [focusRpsId, setFocusRpsId] = useState<string | null>(null);
+  const [shareNotice, setShareNotice] = useState<string | null>(
+    initialShare.notice
+  );
+
+  // Clean the URL after mount (remove ?share= param)
+  useEffect(() => {
+    if (initialShare.loadRequest && typeof window !== "undefined") {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [initialShare.loadRequest]);
 
   const handleSaved = useCallback(() => {
     setSavedRefreshKey((k) => k + 1);
@@ -162,6 +219,18 @@ export default function Home() {
 
       {/* Main */}
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {shareNotice && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5">
+            <Share2 className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-sm text-foreground flex-1">{shareNotice}</span>
+            <button
+              onClick={() => setShareNotice(null)}
+              className="text-muted-foreground hover:text-foreground shrink-0"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
@@ -224,7 +293,7 @@ export default function Home() {
               <GraduationCap className="h-3.5 w-3.5" />
             </div>
             <span>
-              SmartRPS Builder &middot; OBE Curriculum Framework &middot; v1.8
+              SmartRPS Builder &middot; OBE Curriculum Framework &middot; v1.9
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
