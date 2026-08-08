@@ -70,18 +70,18 @@ export const PROVIDER_PRESETS: Record<
     models: ["openai/gpt-4o-mini", "anthropic/claude-3.5-sonnet", "deepseek/deepseek-r1", "google/gemini-2.0-flash-001"],
   },
   dahl: {
-    name: "Dahl Global (Kimi)",
-    description: "Inference endpoint di inference.dahl.global/v1 dengan model Moonshot Kimi.",
+    name: "Dahl Global (Kimi & MiniMax)",
+    description: "Inference endpoint di inference.dahl.global/v1 dengan model Moonshot Kimi & MiniMax M2.7.",
     defaultBaseUrl: "https://inference.dahl.global/v1",
     defaultModel: "moonshotai/Kimi-K2.6",
-    models: ["moonshotai/Kimi-K2.6", "moonshotai/Kimi-K1.5"],
+    models: ["moonshotai/Kimi-K2.6", "MiniMaxAI/MiniMax-M2.7"],
   },
   custom: {
     name: "Custom / Local Server",
     description: "Server kompatibel OpenAI seperti Ollama, LocalAI, LM Studio, vLLM, Dahl Global.",
     defaultBaseUrl: "https://inference.dahl.global/v1",
     defaultModel: "moonshotai/Kimi-K2.6",
-    models: ["moonshotai/Kimi-K2.6", "llama3", "mistral", "qwen", "gemma"],
+    models: ["moonshotai/Kimi-K2.6", "MiniMaxAI/MiniMax-M2.7", "llama3", "mistral", "qwen", "gemma"],
   },
   standalone: {
     name: "Mode Mandiri (Offline)",
