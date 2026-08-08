@@ -234,7 +234,7 @@ export function WizardFlow({ open, onOpenChange, onComplete }: WizardFlowProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[96vw] max-w-7xl max-h-[94vh] sm:max-h-[92vh] overflow-y-auto bg-slate-950 text-slate-100 border-slate-800 p-4 sm:p-6 rounded-2xl shadow-2xl shadow-indigo-950/80">
+      <DialogContent className="w-[98vw] sm:w-[96vw] lg:w-[94vw] xl:w-[92vw] max-w-[1600px] max-h-[96vh] sm:max-h-[94vh] lg:max-h-[92vh] overflow-y-auto bg-slate-950 text-slate-100 border-slate-800/80 p-3.5 sm:p-5 lg:p-6 rounded-2xl shadow-2xl shadow-indigo-950/90 transition-all">
         <DialogHeader className="border-b border-slate-800 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
