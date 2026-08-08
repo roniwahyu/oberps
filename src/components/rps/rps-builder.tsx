@@ -71,25 +71,45 @@ import { PresetLibrary } from "./preset-library";
 import { WeeklyMatrixEditor } from "./weekly-matrix-editor";
 import { CplCpmkLibrary, LibraryEntry } from "./cpl-cpmk-library";
 import { RpsShareDialog } from "./rps-share-dialog";
-import { loadStoredLLMConfig } from "./llm-settings";
+import { loadStoredLLMConfig, LLMProvider } from "./llm-settings";
 import { CurriculumUploader, loadStoredCurriculumContext, CurriculumContextData } from "./curriculum-uploader";
 import { generateRPSWithPuter } from "@/lib/puter-generator";
+import { WizardFlow, WizardFlowData } from "./wizard-flow";
 
-/** Extract + parse JSON from raw LLM text (handles markdown fences, leading text, etc.) */
-function parseGeneratedJSON(rawText: string): unknown {
-  const trimmed = rawText.trim();
+/** Extract + parse JSON from raw LLM text (handles think tags, markdown fences, leading text, truncated JSON, etc.) */
+function parseGeneratedJSON(rawText: string): any {
+  let trimmed = rawText.trim();
+
+  // Strip reasoning blocks <think>...</think> from models like DeepSeek, MiniMax, Kimi
+  trimmed = trimmed.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 
   // Try markdown code fence first
   const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fenceMatch) {
-    return JSON.parse(fenceMatch[1].trim());
+    trimmed = fenceMatch[1].trim();
   }
 
   // Try to extract bare JSON object
   const firstBrace = trimmed.indexOf("{");
   const lastBrace = trimmed.lastIndexOf("}");
   if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
+    try {
+      return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
+    } catch {
+      // Fallback to full string try below
+    }
+  }
+
+  if (firstBrace !== -1 && lastBrace === -1) {
+    const sliced = trimmed.slice(firstBrace);
+    const openCount = (sliced.match(/\{/g) || []).length;
+    const closeCount = (sliced.match(/\}/g) || []).length;
+    const missing = Math.max(0, openCount - closeCount);
+    try {
+      return JSON.parse(sliced + "}".repeat(missing));
+    } catch {
+      // Continue
+    }
   }
 
   return JSON.parse(trimmed);
@@ -101,7 +121,7 @@ export interface RpsLoadRequest {
   semester: string;
   programStudi: string;
   deskripsi: string;
-  jsonData: unknown;
+  jsonData: any;
   promptText: string;
   nonce: number;
 }
@@ -133,7 +153,7 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
   const [form, setForm] = useState<RPSFormInput>(DEFAULT_FORM_INPUT);
   const [deskripsi, setDeskripsi] = useState("");
   const [templateId, setTemplateId] = useState<TemplateId>("standard");
-  const [generatedData, setGeneratedData] = useState<unknown>(null);
+  const [generatedData, setGeneratedData] = useState<any>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -148,6 +168,69 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [cplLibraryOpen, setCplLibraryOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+
+  const handleWizardComplete = useCallback(
+    async (wizardData: WizardFlowData, provider: LLMProvider) => {
+      setForm(wizardData.formInput);
+      const masterPrompt = buildMasterPrompt(
+        wizardData.formInput,
+        wizardData.templateId,
+        wizardData.curriculumContext?.rawSummary
+      );
+
+      setIsGenerating(true);
+      setGenProgress(20);
+      setGenStatusText(`Menghubungkan ke ${provider.toUpperCase()} Engine...`);
+
+      try {
+        if (provider === "puter") {
+          const rawText = await generateRPSWithPuter(masterPrompt, (msg) => setGenStatusText(msg));
+          const parsed = parseGeneratedJSON(rawText);
+          setGeneratedData(parsed);
+          setGeneratedPrompt(masterPrompt);
+          setViewMode("summary");
+          toast({
+            title: "RPS Wizard Berhasil!",
+            description: `RPS ${wizardData.formInput.mataKuliah} berhasil digenerate via Puter.js AI.`,
+          });
+        } else {
+          const llmConfig = loadStoredLLMConfig();
+          const activeConfig = { ...llmConfig, provider };
+          const res = await fetch("/api/rps/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...wizardData.formInput,
+              templateId: wizardData.templateId,
+              llmConfig: activeConfig,
+              curriculumContext: wizardData.curriculumContext?.rawSummary,
+            }),
+          });
+          const json = await res.json();
+          if (!res.ok || !json.success) {
+            throw new Error(json?.error || "Gagal generate RPS dari server.");
+          }
+          setGeneratedData(json.data);
+          setGeneratedPrompt(json.prompt);
+          setViewMode("summary");
+          toast({
+            title: "RPS Wizard Berhasil!",
+            description: `RPS ${wizardData.formInput.mataKuliah} berhasil digenerate oleh AI Engine (${provider.toUpperCase()}).`,
+          });
+        }
+      } catch (err) {
+        toast({
+          title: "Wizard Generation Warning",
+          description: `Gagal koneksi server. Menggunakan engine standalone fallback: ${err instanceof Error ? err.message : "Error"}`,
+          variant: "destructive",
+        });
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [toast]
+  );
 
   // Simulated progress during generation
   useEffect(() => {
@@ -546,6 +629,11 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
         onOpenChange={setCplLibraryOpen}
         onApply={handleApplyCplCpmk}
       />
+      <WizardFlow
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        onComplete={handleWizardComplete}
+      />
       {/* LEFT: Form + Prompt Preview */}
       <div className="lg:col-span-5 space-y-6">
         <Card className="border-border/60 shadow-sm">
@@ -556,13 +644,23 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
                   <FileText className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-base">Input Mata Kuliah</CardTitle>
+                  <CardTitle className="text-base font-semibold">Form Mata Kuliah</CardTitle>
                   <CardDescription className="text-xs">
-                    Isi data berikut, master prompt akan diperbarui otomatis.
+                    Isi data mata kuliah atau gunakan Wizard 9-Step OBE
                   </CardDescription>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-indigo-500/50 text-indigo-400 bg-indigo-950/20 hover:bg-indigo-900/40 text-xs font-semibold h-8"
+                  onClick={() => setWizardOpen(true)}
+                >
+                  <Wand2 className="w-3.5 h-3.5 mr-1 text-indigo-400 animate-pulse" />
+                  Wizard 9-Step OBE
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"

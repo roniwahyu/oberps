@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
       let model = body.model?.trim();
       if (!model) {
         if (provider === "openrouter") model = "openai/gpt-4o-mini";
-        else if (provider === "dahl") model = "moonshotai/Kimi-K2.6";
+        else if (provider === "dahl") model = "MiniMaxAI/MiniMax-M2.7";
         else model = "gpt-4o-mini";
       }
 
