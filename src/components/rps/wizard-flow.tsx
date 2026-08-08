@@ -234,7 +234,7 @@ export function WizardFlow({ open, onOpenChange, onComplete }: WizardFlowProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-950 text-slate-100 border-slate-800 p-6">
+      <DialogContent className="w-[96vw] max-w-7xl max-h-[94vh] sm:max-h-[92vh] overflow-y-auto bg-slate-950 text-slate-100 border-slate-800 p-4 sm:p-6 rounded-2xl shadow-2xl shadow-indigo-950/80">
         <DialogHeader className="border-b border-slate-800 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -243,7 +243,7 @@ export function WizardFlow({ open, onOpenChange, onComplete }: WizardFlowProps) 
               </div>
               <div>
                 <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-                  Wizard Wizard RPS OBE 9-Step
+                  Wizard RPS OBE 9-Step
                   <Badge variant="outline" className="border-indigo-500/50 text-indigo-300 bg-indigo-500/10">
                     SN-DIKTI Standard
                   </Badge>
