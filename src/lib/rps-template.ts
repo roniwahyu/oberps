@@ -97,29 +97,18 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
 ];
 
 /**
- * Build the master prompt based on PROMPT - BUAT RPS OBE With AI Master Guide & God-Tier CoT Distillation
+ * Raw God-Tier Master Prompt Template with explicit {{TAG}} and [[TAG]] placeholders
+ * designed for seamless Agentic AI prompt customization, variable substitution, and LLM subagent orchestration.
  */
-export function buildMasterPrompt(
-  input: RPSFormInput,
-  templateId: TemplateId = "standard",
-  curriculumContextText?: string
-): string {
-  const template =
-    PROMPT_TEMPLATES.find((t) => t.id === templateId) || PROMPT_TEMPLATES[0];
-
-  const curriculumSection = curriculumContextText
-    ? `\n\nDOKUMEN ACUAN KURIKULUM PRODI TERLAMPIR (ACUAN MUTLAK CPL, PL, DAN CPMK INSTITUSI):\n${curriculumContextText}\n\nWAJIB: Gunakan rincian CPL dan Profil Lulusan dari dokumen acuan kurikulum di atas untuk menyelaraskan CPL_PRODI, CPMK, dan matriks mingguan M1-M16!`
-    : "";
-
-  return `IDENTITAS PERAN: Pakar Kurikulum OBE & SN-DIKTI Indonesia dengan keahlian Constructive Alignment & Instructional Design.
+export const GODTIER_RAW_MASTER_PROMPT_TEMPLATE = `IDENTITAS PERAN: Pakar Kurikulum OBE & SN-DIKTI Indonesia dengan keahlian Constructive Alignment & Instructional Design.
 
 DATA MATA KULIAH (INPUT):
-- Nama Mata Kuliah : ${input.mataKuliah}
-- Kode MK          : ${input.kodeMK || "-"}
-- Bobot SKS        : ${input.sks} SKS ${input.sksTeori ? `(${input.sksTeori} Teori + ${input.sksPraktikum || "0"} Praktikum)` : ""}
-- Semester         : ${input.semester}
-- Program Studi    : ${input.programStudi}
-- Dosen Pengampu   : ${input.namaDosen || "Tim Dosen"}${curriculumSection}
+- Nama Mata Kuliah : {{MATA_KULIAH}}
+- Kode MK          : {{KODE_MK}}
+- Bobot SKS        : {{SKS}} SKS {{SKS_DETAIL}}
+- Semester         : {{SEMESTER}}
+- Program Studi    : {{PROGRAM_STUDI}}
+- Dosen Pengampu   : {{NAMA_DOSEN}}{{CURRICULUM_SECTION}}
 
 ATURAN UTAMA & CHAIN-OF-THOUGHT INTERNAL:
 
@@ -146,5 +135,60 @@ ATURAN UTAMA & CHAIN-OF-THOUGHT INTERNAL:
 
 Gunakan struktur JSON berikut sebagai skema utama:
 
-${RPS_JSON_TEMPLATE}${template.extraInstructions}`;
+${RPS_JSON_TEMPLATE}{{EXTRA_INSTRUCTIONS}}`;
+
+/**
+ * Render Master Prompt Template by replacing {{TAG}} or [[TAG]] placeholders for Agentic AI workflows
+ */
+export function renderMasterPromptTemplate(
+  templateString: string,
+  variables: Record<string, string>
+): string {
+  let rendered = templateString;
+  for (const [key, val] of Object.entries(variables)) {
+    const upperKey = key.toUpperCase();
+    const lowerKey = key.toLowerCase();
+
+    // Replace {{KEY}}, {{key}}, [[KEY]], [[key]]
+    rendered = rendered
+      .replaceAll(`{{${upperKey}}}`, val)
+      .replaceAll(`{{${lowerKey}}}`, val)
+      .replaceAll(`{{${key}}}`, val)
+      .replaceAll(`[[${upperKey}]]`, val)
+      .replaceAll(`[[${lowerKey}]]`, val)
+      .replaceAll(`[[${key}]]`, val);
+  }
+  return rendered;
+}
+
+/**
+ * Build the master prompt based on PROMPT - BUAT RPS OBE With AI Master Guide & God-Tier CoT Distillation
+ */
+export function buildMasterPrompt(
+  input: RPSFormInput,
+  templateId: TemplateId = "standard",
+  curriculumContextText?: string
+): string {
+  const template =
+    PROMPT_TEMPLATES.find((t) => t.id === templateId) || PROMPT_TEMPLATES[0];
+
+  const curriculumSection = curriculumContextText
+    ? `\n\nDOKUMEN ACUAN KURIKULUM PRODI TERLAMPIR (ACUAN MUTLAK CPL, PL, DAN CPMK INSTITUSI):\n${curriculumContextText}\n\nWAJIB: Gunakan rincian CPL dan Profil Lulusan dari dokumen acuan kurikulum di atas untuk menyelaraskan CPL_PRODI, CPMK, dan matriks mingguan M1-M16!`
+    : "";
+
+  const sksDetail = input.sksTeori
+    ? `(${input.sksTeori} Teori + ${input.sksPraktikum || "0"} Praktikum)`
+    : "";
+
+  return renderMasterPromptTemplate(GODTIER_RAW_MASTER_PROMPT_TEMPLATE, {
+    MATA_KULIAH: input.mataKuliah,
+    KODE_MK: input.kodeMK || "-",
+    SKS: input.sks,
+    SKS_DETAIL: sksDetail,
+    SEMESTER: input.semester,
+    PROGRAM_STUDI: input.programStudi,
+    NAMA_DOSEN: input.namaDosen || "Tim Dosen",
+    CURRICULUM_SECTION: curriculumSection,
+    EXTRA_INSTRUCTIONS: template.extraInstructions,
+  });
 }
