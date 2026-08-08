@@ -73,6 +73,27 @@ import { CplCpmkLibrary, LibraryEntry } from "./cpl-cpmk-library";
 import { RpsShareDialog } from "./rps-share-dialog";
 import { loadStoredLLMConfig } from "./llm-settings";
 import { CurriculumUploader, loadStoredCurriculumContext, CurriculumContextData } from "./curriculum-uploader";
+import { generateRPSWithPuter } from "@/lib/puter-generator";
+
+/** Extract + parse JSON from raw LLM text (handles markdown fences, leading text, etc.) */
+function parseGeneratedJSON(rawText: string): unknown {
+  const trimmed = rawText.trim();
+
+  // Try markdown code fence first
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenceMatch) {
+    return JSON.parse(fenceMatch[1].trim());
+  }
+
+  // Try to extract bare JSON object
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
+  }
+
+  return JSON.parse(trimmed);
+}
 
 export interface RpsLoadRequest {
   mataKuliah: string;
@@ -232,8 +253,38 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
     setIsGenerating(true);
     setGeneratedData(null);
 
+    const llmConfig = loadStoredLLMConfig();
+
+    // ── PUTER.JS DIRECT PATH ─────────────────────────────────────────────
+    if (llmConfig.provider === "puter") {
+      try {
+        const masterPrompt = buildMasterPrompt(form, templateId, curriculumContext?.rawSummary);
+        const rawText = await generateRPSWithPuter(masterPrompt, (msg) => {
+          console.log("[Puter.js]", msg);
+        });
+        const parsed = parseGeneratedJSON(rawText);
+        setGeneratedData(parsed);
+        setGeneratedPrompt(masterPrompt);
+        setViewMode("summary");
+        toast({
+          title: "RPS berhasil dibuat via Puter.js!",
+          description: `RPS untuk ${form.mataKuliah} telah digenerate oleh claude-3-7-sonnet / gpt-4o.`,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        toast({
+          title: "Puter.js gagal",
+          description: message,
+          variant: "destructive",
+        });
+      } finally {
+        setIsGenerating(false);
+      }
+      return;
+    }
+
+    // ── SERVER-SIDE API PATH (OpenAI / Anthropic / Dahl / Custom / Standalone) ─
     try {
-      const llmConfig = loadStoredLLMConfig();
       const res = await fetch("/api/rps/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -247,7 +298,37 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(json?.error || "Gagal generate RPS.");
+        const errMsg = json?.error || "Gagal generate RPS.";
+
+        // ── PUTER.JS AUTOMATIC FALLBACK ─────────────────────────────────
+        if (
+          errMsg.includes("NO_API_KEY") ||
+          errMsg.includes("FALLBACK_TO_PUTER") ||
+          errMsg.includes("401") ||
+          errMsg.includes("403") ||
+          llmConfig.provider === "standalone"
+        ) {
+          toast({
+            title: "Beralih ke Puter.js (Fallback)",
+            description: "API LLM tidak tersedia. Mencoba generate via Puter.js secara gratis...",
+          });
+          const masterPrompt = buildMasterPrompt(form, templateId, curriculumContext?.rawSummary);
+          const rawText = await generateRPSWithPuter(masterPrompt, (msg) => {
+            console.log("[Puter.js Fallback]", msg);
+          });
+          const parsed = parseGeneratedJSON(rawText);
+          setGeneratedData(parsed);
+          setGeneratedPrompt(masterPrompt);
+          setViewMode("summary");
+          toast({
+            title: "RPS berhasil via Puter.js!",
+            description: `RPS untuk ${form.mataKuliah} digenerate melalui Puter.js AI sebagai fallback.`,
+          });
+          setIsGenerating(false);
+          return;
+        }
+
+        throw new Error(errMsg);
       }
 
       setGeneratedData(json.data);
@@ -259,6 +340,39 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
+      // Last-resort Puter.js fallback for any network error
+      if (
+        message.includes("fetch") ||
+        message.includes("network") ||
+        message.includes("ERR_")
+      ) {
+        try {
+          toast({
+            title: "Koneksi server gagal. Mencoba Puter.js...",
+            description: "Fallback otomatis ke Puter.js AI...",
+          });
+          const masterPrompt = buildMasterPrompt(form, templateId, curriculumContext?.rawSummary);
+          const rawText = await generateRPSWithPuter(masterPrompt);
+          const parsed = parseGeneratedJSON(rawText);
+          setGeneratedData(parsed);
+          setGeneratedPrompt(masterPrompt);
+          setViewMode("summary");
+          toast({
+            title: "RPS berhasil via Puter.js!",
+            description: `Fallback berhasil: RPS ${form.mataKuliah} digenerate via Puter.js.`,
+          });
+          setIsGenerating(false);
+          return;
+        } catch (puterErr) {
+          toast({
+            title: "Semua layanan AI gagal",
+            description: `Server gagal & Puter.js gagal: ${puterErr instanceof Error ? puterErr.message : "Error tidak diketahui"}`,
+            variant: "destructive",
+          });
+          setIsGenerating(false);
+          return;
+        }
+      }
       toast({
         title: "Gagal generate",
         description: message,
@@ -267,7 +381,7 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
     } finally {
       setIsGenerating(false);
     }
-  }, [form, toast]);
+  }, [form, toast, templateId, curriculumContext]);
 
   const handleSave = useCallback(async () => {
     if (!generatedData) {

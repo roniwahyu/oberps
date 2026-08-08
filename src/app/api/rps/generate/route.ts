@@ -5,7 +5,7 @@ import { generateFallbackRPS } from "@/lib/rps-generator-fallback";
 export const dynamic = "force-dynamic";
 
 export interface CustomLLMConfig {
-  provider?: "openai" | "anthropic" | "openrouter" | "dahl" | "custom" | "standalone";
+  provider?: "openai" | "anthropic" | "openrouter" | "dahl" | "custom" | "puter" | "standalone";
   apiKey?: string;
   baseUrl?: string;
   model?: string;
@@ -27,7 +27,7 @@ async function fetchAICompletion(
   const provider = config?.provider || "openai";
   const apiKey = (config?.apiKey?.trim() || process.env.OPENAI_API_KEY || process.env.AI_API_KEY || process.env.GEMINI_API_KEY || "").trim();
 
-  if (provider === "standalone" || (!apiKey && provider !== "custom")) {
+  if (provider === "standalone" || provider === "puter" || (!apiKey && provider !== "custom")) {
     throw new Error("NO_API_KEY");
   }
 
