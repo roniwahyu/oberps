@@ -312,7 +312,11 @@ export function RpsBuilder({ onSaved, loadRequest }: RpsBuilderProps) {
     setViewMode("summary");
   }, [loadRequest]);
 
-  const [curriculumContext, setCurriculumContext] = useState<CurriculumContextData | null>(loadStoredCurriculumContext);
+  const [curriculumContext, setCurriculumContext] = useState<CurriculumContextData | null>(null);
+
+  useEffect(() => {
+    setCurriculumContext(loadStoredCurriculumContext());
+  }, []);
 
   const livePrompt = useMemo(
     () => buildMasterPrompt(form, templateId, curriculumContext?.rawSummary),

@@ -17,11 +17,13 @@ import {
   Wand2,
   ExternalLink,
   ChevronRight,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { loadStoredLLMConfig, LLMProvider } from "@/components/rps/llm-settings";
+import { CurriculumExporterDialog } from "@/components/curriculum/curriculum-exporter-dialog";
 
 interface MainNavbarProps {
   activeTab: string;
@@ -39,6 +41,7 @@ export function MainNavbar({
   savedCount = 0,
 }: MainNavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openCurriculumExporter, setOpenCurriculumExporter] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [llmConfig, setLlmConfig] = useState<{ provider: LLMProvider }>({ provider: "dahl" });
 
@@ -201,6 +204,18 @@ export function MainNavbar({
             </kbd>
           </Button>
 
+          {/* Curriculum Exporter Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setOpenCurriculumExporter(true)}
+            className="h-9 px-2.5 sm:px-3 text-xs font-medium border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hidden lg:inline-flex"
+            title="Ekspor Modul Kurikulum 13-Sheet Excel"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5 mr-1 text-emerald-400" />
+            Export XLSX
+          </Button>
+
           {/* Wizard Launcher Button */}
           {onOpenWizard && (
             <Button
@@ -313,6 +328,11 @@ export function MainNavbar({
           </motion.div>
         )}
       </AnimatePresence>
+
+      <CurriculumExporterDialog
+        open={openCurriculumExporter}
+        onOpenChange={setOpenCurriculumExporter}
+      />
     </header>
   );
 }
