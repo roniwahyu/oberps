@@ -24,6 +24,7 @@ import { RpsSavedList } from "@/components/rps/rps-saved-list";
 import { RpsAbout } from "@/components/rps/rps-about";
 import { LlmSettings } from "@/components/rps/llm-settings";
 import { GlobalSearch } from "@/components/rps/global-search";
+import { MainNavbar } from "@/components/navigation/main-navbar";
 
 interface SavedRpsLike {
   id: string;
@@ -150,84 +151,11 @@ export default function Home() {
         onOpenChange={setSearchOpen}
         onSelect={handleSearchSelect}
       />
-      {/* Header */}
-      <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/30 blur-lg rounded-xl" />
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shrink-0">
-                <GraduationCap className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight truncate">
-                  SmartRPS Builder
-                </h1>
-                <Badge
-                  variant="secondary"
-                  className="hidden sm:inline-flex text-[10px] font-normal"
-                >
-                  OBE
-                </Badge>
-              </div>
-              <p className="text-[11px] text-muted-foreground truncate">
-                AI-powered RPS Generator berbasis Outcome-Based Education
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSearchOpen(true)}
-              className="h-9 gap-1.5"
-              title="Pencarian global (Ctrl+Shift+F)"
-            >
-              <Search className="h-3.5 w-3.5" />
-              <span className="hidden lg:inline text-xs">Cari</span>
-              <kbd className="hidden lg:inline ml-1 px-1 py-0.5 rounded border border-border/60 bg-muted font-mono text-[9px] text-muted-foreground">
-                ⌃⇧F
-              </kbd>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveTab("settings")}
-              className="h-9 gap-1.5"
-              title="Pengaturan LLM API Token"
-            >
-              <Key className="h-3.5 w-3.5 text-primary" />
-              <span className="hidden sm:inline text-xs">Pengaturan LLM</span>
-            </Button>
-            <ThemeToggle />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden sm:inline-flex h-9"
-              asChild
-            >
-              <a
-                href="https://smartrps.rifainstitute.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Github className="h-3.5 w-3.5 mr-1.5" />
-                Referensi
-              </a>
-            </Button>
-            <Button
-              size="sm"
-              className="h-9 shadow-sm"
-              onClick={() => setActiveTab("builder")}
-            >
-              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              Buat RPS
-            </Button>
-          </div>
-        </div>
-      </header>
+      <MainNavbar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onOpenSearch={() => setSearchOpen(true)}
+      />
 
       {/* Main */}
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
