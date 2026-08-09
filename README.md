@@ -84,6 +84,7 @@ Aplikasi ini menggunakan arsitektur AI *Chain-of-Thought (CoT)* untuk mentransfo
 | **09-08-2026** | `v2.0` | **PRD for Agentic AI OBE RPS Applications** | Penyusunan dokumen PRD lengkap berbasis `PROMPT*.pdf` & `Implementasi_Modul_OBE*.xlsx` untuk pengembangan agen AI otonom. | [`docs/0019_prd_agentic_ai_obe_rps.md`](file:///d:/laragon/www/oberps/docs/0019_prd_agentic_ai_obe_rps.md) |
 | **09-08-2026** | `v3.1` | **Modular API-Driven 13-Sheet Excel Curriculum Exporter** | Implementasi modul kurikulum OBE, mesin generator 13-sheet Excel (`excel-generator.ts`), API `/api/curriculum/export`, dan `CurriculumExporterDialog`. | [`docs/0021_dev_report_09082026.md`](file:///d:/laragon/www/oberps/docs/0021_dev_report_09082026.md) |
 | **09-08-2026** | `v3.1.1` | **Resolusi Hydration Mismatch & React 19 Script Warning** | Penanganan `scriptProps` pada `ThemeProvider` & guard `useEffect` pada `curriculumContext` (`rps-builder.tsx`). | [`docs/0023_dev_log_09082026.md`](file:///d:/laragon/www/oberps/docs/0023_dev_log_09082026.md) |
+| **09-08-2026** | `v3.2.0` | **Master PRD Upgrade (Sections 18-20 Added)** | Penambahan spesifikasi Mesin PDF Institusional (Spesifikasi @page & TTD 3-pihak), Protokol Keamanan Key Rotasi, dan Jaminan Zero Hydration Mismatch. | [`docs/0000_prd_agentic_ai_obe_rps.md`](file:///d:/laragon/www/oberps/docs/0000_prd_agentic_ai_obe_rps.md) |
 
 ---
 
@@ -133,8 +134,8 @@ Aplikasi dapat diakses melalui browser di `http://localhost:3000`.
 
 Seluruh dokumen catatan teknis, laporan pengembangan, dan peta jalan tersimpan rapi di direktori [`docs/`](file:///d:/laragon/www/oberps/docs):
 
+- 📘 [0000_prd_agentic_ai_obe_rps.md](file:///d:/laragon/www/oberps/docs/0000_prd_agentic_ai_obe_rps.md) - **Master Product Requirement Document (PRD) for Agentic AI (v3.2.0 Enterprise Platinum Final)**
 - 📄 [0023_dev_log_09082026.md](file:///d:/laragon/www/oberps/docs/0023_dev_log_09082026.md) - Catatan Resolusi Hydration Mismatch & React 19 Script Warning
-- 📘 [0019_prd_agentic_ai_obe_rps.md](file:///d:/laragon/www/oberps/docs/0019_prd_agentic_ai_obe_rps.md) - **Master Product Requirement Document (PRD) for Agentic AI (v3.1.0 Enterprise)**
 - 📄 [0021_dev_report_09082026.md](file:///d:/laragon/www/oberps/docs/0021_dev_report_09082026.md) - Laporan Implementasi 13-Sheet Excel Curriculum Exporter
 - 📄 [0020_dev_log_09082026.md](file:///d:/laragon/www/oberps/docs/0020_dev_log_09082026.md) - Catatan Kronologis Pengembangan Modul Kurikulum
 - 📄 [0022_dev_plan_09082026.md](file:///d:/laragon/www/oberps/docs/0022_dev_plan_09082026.md) - Rencana Pengembangan Lanjutan (Phase 4.0 Roadmap)
