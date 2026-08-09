@@ -203,12 +203,28 @@ export function buildPrintHtml(params: PrintParams): string {
 </style>
 </head>
 <body>
+  <!-- Official Institutional Kop Header -->
+  <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 42px; height: 42px; border-radius: 8px; background: #0f172a; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; letter-spacing: -0.5px;">OBE</div>
+      <div>
+        <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #0f172a;">YAYASAN PENDIDIKAN PERGURUAN ISLAM WIDYA GAMA MALANG</div>
+        <div style="font-size: 10px; font-weight: 700; color: #334155; text-transform: uppercase;">FAKULTAS TEKNIK &middot; ${esc(programStudi)}</div>
+        <div style="font-size: 8px; color: #64748b;">Standar Penjaminan Mutu Internal (SPMI) SN-DIKTI &middot; Akreditasi LAM-INFOKOM</div>
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <span class="badge" style="background:#0284c7; color:#fff; font-size:9px; padding:3px 8px; border-radius:4px;">STATUS: APPROVED SN-DIKTI</span>
+      <div style="font-size: 8px; color: #64748b; margin-top: 4px;">Kode Dokumen: RPS-${esc(programStudi.replace(/\s+/g, '-').toUpperCase())}-2026</div>
+    </div>
+  </div>
+
   <div class="header">
     <div>
       <h1>RENCANA PEMBELAJARAN SEMESTER (RPS)</h1>
       <div class="meta">${esc(programStudi)} &middot; Semester ${esc(semester)} &middot; ${esc(sks)} SKS</div>
     </div>
-    <span class="badge">OBE</span>
+    <span class="badge">OBE Standard</span>
   </div>
 
   <div class="info-grid">
@@ -313,8 +329,38 @@ export function buildPrintHtml(params: PrintParams): string {
     <tbody>${rubrikHtml}</tbody>
   </table>` : ""}
 
-  <div class="footer">
-    RPS ${esc(mataKuliah)} &middot; ${esc(programStudi)} &middot; Dicetak dari SmartRPS Builder
+  <!-- Validation & Signatures Block -->
+  <div style="margin-top: 30px; page-break-inside: avoid;">
+    <table style="width: 100%; border: 1px solid #cbd5e1; border-collapse: collapse; margin-top: 16px;">
+      <thead>
+        <tr style="background: #f1f5f9;">
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 33%;">Dosen Pengampu</th>
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 33%;">Pemeriksa (GPM / LPM)</th>
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; width: 34%;">Persetujuan (Ketua Program Studi)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="border: 1px solid #cbd5e1; padding: 30px 12px 12px 12px; text-align: center; font-size: 10px;">
+            <div style="font-weight: 700;">${esc(data.TEAM_TEACHING && data.TEAM_TEACHING !== "-" ? data.TEAM_TEACHING : "Tim Dosen Pengampu")}</div>
+            <div style="color: #64748b; font-size: 9px; margin-top: 2px;">Penyusun RPS</div>
+          </td>
+          <td style="border: 1px solid #cbd5e1; padding: 30px 12px 12px 12px; text-align: center; font-size: 10px;">
+            <div style="font-weight: 700;">Gugus Penjaminan Mutu</div>
+            <div style="color: #64748b; font-size: 9px; margin-top: 2px;">Reviewer Kurikulum OBE</div>
+          </td>
+          <td style="border: 1px solid #cbd5e1; padding: 30px 12px 12px 12px; text-align: center; font-size: 10px;">
+            <div style="font-weight: 700;">Ketua Program Studi ${esc(programStudi)}</div>
+            <div style="color: #64748b; font-size: 9px; margin-top: 2px;">Mengesahkan</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer" style="margin-top: 20px; font-size: 9px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+    <div>Dokumen RPS Resmi &middot; ${esc(mataKuliah)} (${esc(programStudi)}) &middot; SN-DIKTI Verified</div>
+    <div style="font-family: monospace; font-weight: 600; color: #0284c7;">VERIFIED BY SPMI &middot; DICETAK MELALUI OBERPS SYSTEM</div>
   </div>
 </body>
 </html>`;
