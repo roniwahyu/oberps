@@ -81,6 +81,9 @@ Aplikasi ini menggunakan arsitektur AI *Chain-of-Thought (CoT)* untuk mentransfo
 | **08-08-2026** | `v1.9` | **Resolusi Hydration, Script Warning & Full Wide Modal** | Eliminasi warning React 19 `<Script>`, penanganan *Hydration Mismatch* `curriculum-uploader.tsx`, dan pembukaan modal *Full Wide* 1500px (`dialog.tsx`). | [`docs/0014_dev_log_08082026.md`](file:///d:/laragon/www/oberps/docs/0014_dev_log_08082026.md) |
 | **09-08-2026** | `v1.9.1` | **Master Feature Catalog & Centralized Docs** | Penyusunan katalog fitur lengkap, konsolidasi seluruh dokumentasi ke folder `docs/`, dan pembaruan master `README.md`. | [`docs/0017_master_feature_catalog_09082026.md`](file:///d:/laragon/www/oberps/docs/0017_master_feature_catalog_09082026.md) |
 | **09-08-2026** | `v1.9.2` | **Agentic Template, Security Audit & Final Summary** | Implementasi tag template `{{ }}` & `[[ ]]`, audit keamanan 0 hardcoded key, pembuatan `godtier_master_prompt.prompt`, dan rangkuman aktivitas. | [`docs/0018_master_session_summary_09082026.md`](file:///d:/laragon/www/oberps/docs/0018_master_session_summary_09082026.md) |
+| **09-08-2026** | `v2.0` | **PRD for Agentic AI OBE RPS Applications** | Penyusunan dokumen PRD lengkap berbasis `PROMPT*.pdf` & `Implementasi_Modul_OBE*.xlsx` untuk pengembangan agen AI otonom. | [`docs/0019_prd_agentic_ai_obe_rps.md`](file:///d:/laragon/www/oberps/docs/0019_prd_agentic_ai_obe_rps.md) |
+| **09-08-2026** | `v3.1` | **Modular API-Driven 13-Sheet Excel Curriculum Exporter** | Implementasi modul kurikulum OBE, mesin generator 13-sheet Excel (`excel-generator.ts`), API `/api/curriculum/export`, dan `CurriculumExporterDialog`. | [`docs/0021_dev_report_09082026.md`](file:///d:/laragon/www/oberps/docs/0021_dev_report_09082026.md) |
+| **09-08-2026** | `v3.1.1` | **Resolusi Hydration Mismatch & React 19 Script Warning** | Penanganan `scriptProps` pada `ThemeProvider` & guard `useEffect` pada `curriculumContext` (`rps-builder.tsx`). | [`docs/0023_dev_log_09082026.md`](file:///d:/laragon/www/oberps/docs/0023_dev_log_09082026.md) |
 
 ---
 
@@ -130,11 +133,13 @@ Aplikasi dapat diakses melalui browser di `http://localhost:3000`.
 
 Seluruh dokumen catatan teknis, laporan pengembangan, dan peta jalan tersimpan rapi di direktori [`docs/`](file:///d:/laragon/www/oberps/docs):
 
+- 📄 [0023_dev_log_09082026.md](file:///d:/laragon/www/oberps/docs/0023_dev_log_09082026.md) - Catatan Resolusi Hydration Mismatch & React 19 Script Warning
+- 📘 [0019_prd_agentic_ai_obe_rps.md](file:///d:/laragon/www/oberps/docs/0019_prd_agentic_ai_obe_rps.md) - **Master Product Requirement Document (PRD) for Agentic AI (v3.1.0 Enterprise)**
+- 📄 [0021_dev_report_09082026.md](file:///d:/laragon/www/oberps/docs/0021_dev_report_09082026.md) - Laporan Implementasi 13-Sheet Excel Curriculum Exporter
+- 📄 [0020_dev_log_09082026.md](file:///d:/laragon/www/oberps/docs/0020_dev_log_09082026.md) - Catatan Kronologis Pengembangan Modul Kurikulum
+- 📄 [0022_dev_plan_09082026.md](file:///d:/laragon/www/oberps/docs/0022_dev_plan_09082026.md) - Rencana Pengembangan Lanjutan (Phase 4.0 Roadmap)
 - 📄 [0018_master_session_summary_09082026.md](file:///d:/laragon/www/oberps/docs/0018_master_session_summary_09082026.md) - Ringkasan Rangkaian Aktivitas Pengembangan Kompleks
 - 📄 [0017_master_feature_catalog_09082026.md](file:///d:/laragon/www/oberps/docs/0017_master_feature_catalog_09082026.md) - Katalog Fitur Lengkap Sistem Oberps
-- 📄 [0015_dev_report_08082026.md](file:///d:/laragon/www/oberps/docs/0015_dev_report_08082026.md) - Laporan Pengembangan & Build Status
-- 📄 [0016_dev_plan_08082026.md](file:///d:/laragon/www/oberps/docs/0016_dev_plan_08082026.md) - Rencana Pengembangan Lanjutan (RBAC & Print PDF)
-- 📄 [0014_dev_log_08082026.md](file:///d:/laragon/www/oberps/docs/0014_dev_log_08082026.md) - Catatan Kronologis Perbaikan Bug & Refactoring
 - 📄 [godtier_master_prompt.prompt](file:///d:/laragon/www/oberps/docs/godtier_master_prompt.prompt) - Standalone Prompt Template File (Standard Mustaches)
 - 📄 [0006_godtier_master_prompt_08082026.md](file:///d:/laragon/www/oberps/docs/0006_godtier_master_prompt_08082026.md) - Spesifikasi CoT Master Prompt SN-DIKTI
 
