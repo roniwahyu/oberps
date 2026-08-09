@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import * as XLSX from "xlsx";
 import {
   FileSpreadsheet,
@@ -55,8 +55,16 @@ interface CurriculumUploaderProps {
 
 export function CurriculumUploader({ onCurriculumLoaded }: CurriculumUploaderProps) {
   const { toast } = useToast();
-  const [curriculum, setCurriculum] = useState<CurriculumContextData | null>(loadStoredCurriculumContext);
+  const [curriculum, setCurriculum] = useState<CurriculumContextData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    const loaded = loadStoredCurriculumContext();
+    if (loaded) {
+      setCurriculum(loaded);
+      if (onCurriculumLoaded) onCurriculumLoaded(loaded);
+    }
+  }, [onCurriculumLoaded]);
 
   const processWorkbook = useCallback(
     async (file: File) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Key,
   Globe,
@@ -17,6 +17,13 @@ import {
   Trash2,
   ShieldCheck,
   RefreshCw,
+  Terminal,
+  Copy,
+  Check,
+  Code,
+  Activity,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,13 +33,27 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
-export type LLMProvider = "openai" | "anthropic" | "openrouter" | "dahl" | "custom" | "standalone";
+export type LLMProvider = "openai" | "anthropic" | "openrouter" | "dahl" | "custom" | "puter" | "standalone";
 
 export interface LLMConfig {
   provider: LLMProvider;
   apiKey: string;
   baseUrl: string;
   model: string;
+}
+
+export interface TestLogDetails {
+  timestamp: string;
+  provider: string;
+  url: string;
+  model: string;
+  status: number;
+  statusText: string;
+  latencyMs: number;
+  requestHeaders: Record<string, string>;
+  requestBody: Record<string, unknown>;
+  responseBody: unknown;
+  replyText?: string;
 }
 
 export const STORAGE_KEY = "smartrps_llm_config";
@@ -70,18 +91,25 @@ export const PROVIDER_PRESETS: Record<
     models: ["openai/gpt-4o-mini", "anthropic/claude-3.5-sonnet", "deepseek/deepseek-r1", "google/gemini-2.0-flash-001"],
   },
   dahl: {
-    name: "Dahl Global (Kimi)",
-    description: "Inference endpoint di inference.dahl.global/v1 dengan model Moonshot Kimi.",
+    name: "Dahl Global (MiniMax & Kimi)",
+    description: "Inference endpoint di inference.dahl.global/v1 dengan MiniMax M2.7 (Tercepat) & Moonshot Kimi.",
     defaultBaseUrl: "https://inference.dahl.global/v1",
-    defaultModel: "moonshotai/Kimi-K2.6",
-    models: ["moonshotai/Kimi-K2.6", "moonshotai/Kimi-K1.5"],
+    defaultModel: "MiniMaxAI/MiniMax-M2.7",
+    models: ["MiniMaxAI/MiniMax-M2.7", "moonshotai/Kimi-K2.6"],
   },
   custom: {
     name: "Custom / Local Server",
     description: "Server kompatibel OpenAI seperti Ollama, LocalAI, LM Studio, vLLM, Dahl Global.",
     defaultBaseUrl: "https://inference.dahl.global/v1",
-    defaultModel: "moonshotai/Kimi-K2.6",
-    models: ["moonshotai/Kimi-K2.6", "llama3", "mistral", "qwen", "gemma"],
+    defaultModel: "MiniMaxAI/MiniMax-M2.7",
+    models: ["MiniMaxAI/MiniMax-M2.7", "moonshotai/Kimi-K2.6", "llama3", "mistral", "qwen", "gemma"],
+  },
+  puter: {
+    name: "Puter.js (Gratis)",
+    description: "AI gratis via puter.com — tanpa API key. Gunakan claude-3-7-sonnet atau gpt-4o via akun Puter pengguna.",
+    defaultBaseUrl: "https://js.puter.com/v2/",
+    defaultModel: "claude-3-7-sonnet",
+    models: ["claude-3-7-sonnet", "gpt-4o", "claude-3-5-sonnet", "o3-mini"],
   },
   standalone: {
     name: "Mode Mandiri (Offline)",
@@ -111,24 +139,33 @@ export function loadStoredLLMConfig(): LLMConfig {
 
 export function saveStoredLLMConfig(config: LLMConfig): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  } catch (err) {
+    console.error("[LLMSettings] Failed to save config:", err);
+  }
 }
 
-interface LlmSettingsProps {
+interface LLMSettingsProps {
   onConfigChange?: (config: LLMConfig) => void;
 }
 
-export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
+export function LlmSettings({ onConfigChange }: LLMSettingsProps) {
   const { toast } = useToast();
   const [config, setConfig] = useState<LLMConfig>(DEFAULT_LLM_CONFIG);
   const [showApiKey, setShowApiKey] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [copiedLog, setCopiedLog] = useState(false);
+  const [showLogDetails, setShowLogDetails] = useState(true);
+  const [activeLogTab, setActiveLogTab] = useState<"summary" | "request" | "response">("summary");
+
   const [testResult, setTestResult] = useState<{
-    success?: boolean;
+    success: boolean;
     message?: string;
+    error?: string;
     reply?: string;
     latencyMs?: number;
-    error?: string;
+    logDetails?: TestLogDetails;
   } | null>(null);
 
   useEffect(() => {
@@ -139,9 +176,9 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
   const handleProviderSelect = (provider: LLMProvider) => {
     const preset = PROVIDER_PRESETS[provider];
     const newConfig: LLMConfig = {
-      ...config,
       provider,
-      baseUrl: config.baseUrl || preset.defaultBaseUrl,
+      apiKey: provider === config.provider ? config.apiKey : "",
+      baseUrl: preset.defaultBaseUrl,
       model: preset.defaultModel,
     };
     setConfig(newConfig);
@@ -177,6 +214,7 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
   const handleTestConnection = async () => {
     setIsTesting(true);
     setTestResult(null);
+    setShowLogDetails(true);
 
     try {
       const res = await fetch("/api/rps/test-llm", {
@@ -195,6 +233,7 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
         setTestResult({
           success: false,
           error: data.error || "Gagal menghubungkan ke server LLM.",
+          logDetails: data.logDetails,
         });
         toast({
           title: "Tes Koneksi Gagal",
@@ -207,9 +246,10 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
           message: data.message,
           reply: data.reply,
           latencyMs: data.latencyMs,
+          logDetails: data.logDetails,
         });
         toast({
-          title: "Koneksi Berhasil!",
+          title: "Koneksi Berhasil & Siap!",
           description: `Terhubung ke ${PROVIDER_PRESETS[config.provider].name} (${data.latencyMs}ms).`,
         });
       }
@@ -224,6 +264,18 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
     } finally {
       setIsTesting(false);
     }
+  };
+
+  const handleCopyLog = () => {
+    if (!testResult?.logDetails) return;
+    const jsonStr = JSON.stringify(testResult.logDetails, null, 2);
+    navigator.clipboard.writeText(jsonStr);
+    setCopiedLog(true);
+    toast({
+      title: "Log Diagnostik Disalin",
+      description: "Data respon dan log diagnostik telah disalin ke clipboard.",
+    });
+    setTimeout(() => setCopiedLog(false), 2000);
   };
 
   const activePreset = PROVIDER_PRESETS[config.provider];
@@ -241,36 +293,16 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
               <div>
                 <CardTitle className="text-lg">Pengaturan LLM API Token</CardTitle>
                 <CardDescription className="text-xs">
-                  Konfigurasikan penyedia model kecerdasan buatan (OpenAI, Anthropic Claude, OpenRouter, atau Mode Mandiri).
+                  Konfigurasikan penyedia model kecerdasan buatan (OpenAI, Anthropic Claude, OpenRouter, Dahl Global, atau Mode Mandiri).
                 </CardDescription>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Badge
                 variant={config.provider === "standalone" ? "outline" : "default"}
-                className="gap-1.5 py-1 px-2.5 font-normal text-xs"
+                className={config.provider !== "standalone" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
               >
-                {config.provider === "standalone" ? (
-                  <>
-                    <Zap className="h-3 w-3 text-amber-500" />
-                    <span>Mode Mandiri</span>
-                  </>
-                ) : config.provider === "anthropic" ? (
-                  <>
-                    <Cpu className="h-3 w-3 text-purple-400" />
-                    <span>Anthropic Claude</span>
-                  </>
-                ) : config.provider === "openai" ? (
-                  <>
-                    <Sparkles className="h-3 w-3 text-emerald-400" />
-                    <span>OpenAI API</span>
-                  </>
-                ) : (
-                  <>
-                    <Globe className="h-3 w-3 text-blue-400" />
-                    <span>{activePreset.name}</span>
-                  </>
-                )}
+                {activePreset.name}
               </Badge>
             </div>
           </div>
@@ -279,66 +311,82 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
 
       {/* Provider Selector Cards */}
       <div className="space-y-3">
-        <Label className="text-sm font-semibold">Pilih Penyedia AI (Provider)</Label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {(Object.keys(PROVIDER_PRESETS) as LLMProvider[]).map((pKey) => {
-            const p = PROVIDER_PRESETS[pKey];
-            const isSelected = config.provider === pKey;
+        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Pilih Penyedia AI (Provider)
+        </Label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {(Object.keys(PROVIDER_PRESETS) as LLMProvider[]).map((key) => {
+            const preset = PROVIDER_PRESETS[key];
+            const isSelected = config.provider === key;
             return (
-              <motion.div
-                key={pKey}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => handleProviderSelect(pKey)}
-                className={`cursor-pointer rounded-xl border p-4 transition-all ${
-                  isSelected
-                    ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40"
-                    : "border-border/60 bg-card hover:border-border hover:bg-muted/40"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="font-semibold text-sm flex items-center gap-2">
-                    {pKey === "openai" && <Sparkles className="h-4 w-4 text-emerald-500" />}
-                    {pKey === "anthropic" && <Cpu className="h-4 w-4 text-purple-500" />}
-                    {pKey === "openrouter" && <Globe className="h-4 w-4 text-blue-500" />}
-                    {pKey === "custom" && <Server className="h-4 w-4 text-amber-500" />}
-                    {pKey === "standalone" && <Zap className="h-4 w-4 text-orange-500" />}
-                    <span>{p.name}</span>
-                  </div>
-                  {isSelected && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                  {p.description}
-                </p>
+              <motion.div key={key} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                <Card
+                  onClick={() => handleProviderSelect(key)}
+                  className={`cursor-pointer transition-all border-2 relative h-full ${
+                    isSelected
+                      ? "border-emerald-500 bg-emerald-500/5 shadow-sm dark:bg-emerald-950/20"
+                      : "border-border/60 hover:border-border hover:bg-muted/30"
+                  }`}
+                >
+                  <CardHeader className="p-4 pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {key === "openai" && <Sparkles className="h-4 w-4 text-emerald-500" />}
+                        {key === "anthropic" && <Cpu className="h-4 w-4 text-purple-500" />}
+                        {key === "openrouter" && <Globe className="h-4 w-4 text-blue-500" />}
+                        {key === "dahl" && <Server className="h-4 w-4 text-teal-500" />}
+                        {key === "custom" && <Server className="h-4 w-4 text-amber-500" />}
+                        {key === "puter" && <Zap className="h-4 w-4 text-green-400" />}
+                        {key === "standalone" && <Zap className="h-4 w-4 text-orange-500" />}
+                        <CardTitle className="text-sm font-semibold">{preset.name}</CardTitle>
+                      </div>
+                      {isSelected && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-1">
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      {preset.description}
+                    </p>
+                  </CardContent>
+                </Card>
               </motion.div>
             );
           })}
         </div>
       </div>
 
-      {/* Form Fields for Selected Provider */}
-      {config.provider !== "standalone" ? (
-        <Card className="border-border/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-primary" />
-              <span>Konfigurasi Token &amp; Endpoint — {activePreset.name}</span>
-            </CardTitle>
+      {/* Configuration Form Card */}
+      {config.provider !== "standalone" && config.provider !== "puter" ? (
+        <Card className="border-border/60 shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                <CardTitle className="text-base">
+                  Konfigurasi Token &amp; Endpoint &mdash; {activePreset.name}
+                </CardTitle>
+              </div>
+              <Badge variant="outline" className="font-mono text-[10px]">
+                {config.provider}
+              </Badge>
+            </div>
             <CardDescription className="text-xs">
-              Token akan disimpan dengan aman di peramban lokal (localStorage) dan dikirimkan langsung ke rute API generate.
+              Token disimpan dengan aman di peramban lokal (localStorage) dan dikirimkan langsung ke API generator.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 pt-1">
-            {/* API Key */}
-            <div className="space-y-2">
+
+          <CardContent className="space-y-4 text-xs">
+            {/* API Key Input */}
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="api-key" className="text-xs font-semibold">
+                <Label htmlFor="api-key-input" className="text-xs font-medium">
                   API Token / Secret Key <span className="text-red-500">*</span>
                 </Label>
                 {config.apiKey && (
                   <button
+                    type="button"
                     onClick={() => setConfig({ ...config, apiKey: "" })}
-                    className="text-[11px] text-muted-foreground hover:text-red-500 flex items-center gap-1"
+                    className="text-[11px] text-muted-foreground hover:text-red-500 flex items-center gap-1 transition-colors"
                   >
                     <Trash2 className="h-3 w-3" /> Bersihkan
                   </button>
@@ -346,44 +394,41 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
               </div>
               <div className="relative">
                 <Input
-                  id="api-key"
+                  id="api-key-input"
                   type={showApiKey ? "text" : "password"}
                   value={config.apiKey}
                   onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
-                  placeholder={
-                    config.provider === "anthropic"
-                      ? "sk-ant-api03-..."
-                      : config.provider === "openrouter"
-                      ? "sk-or-v1-..."
-                      : "sk-proj-..."
-                  }
+                  placeholder={`Masukkan API Token ${activePreset.name} Anda...`}
                   className="pr-10 font-mono text-xs h-10"
                 />
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-10 w-10 text-muted-foreground hover:text-foreground"
                   onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                </Button>
               </div>
             </div>
 
-            {/* Base URL */}
-            <div className="space-y-2">
+            {/* Base URL Input */}
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="base-url" className="text-xs font-semibold">
+                <Label htmlFor="base-url-input" className="text-xs font-medium">
                   API Base URL Endpoint
                 </Label>
                 <button
+                  type="button"
                   onClick={() => setConfig({ ...config, baseUrl: activePreset.defaultBaseUrl })}
-                  className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                  className="text-[11px] text-primary hover:underline"
                 >
                   Reset Default
                 </button>
               </div>
               <Input
-                id="base-url"
+                id="base-url-input"
                 type="text"
                 value={config.baseUrl}
                 onChange={(e) => setConfig({ ...config, baseUrl: e.target.value })}
@@ -393,8 +438,8 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
             </div>
 
             {/* Model Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="model-select" className="text-xs font-semibold">
+            <div className="space-y-1.5">
+              <Label htmlFor="model-select" className="text-xs font-medium">
                 Model AI yang Digunakan
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -429,40 +474,6 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
               </div>
             </div>
 
-            {/* Test Connection Results */}
-            {testResult && (
-              <motion.div
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`rounded-lg border p-3.5 text-xs ${
-                  testResult.success
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                    : "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300"
-                }`}
-              >
-                <div className="flex items-center gap-2 font-semibold">
-                  {testResult.success ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      <span>{testResult.message}</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="h-4 w-4 text-red-500" />
-                      <span>Gagal Menghubungkan</span>
-                    </>
-                  )}
-                </div>
-                {testResult.success ? (
-                  <p className="mt-1 text-[11px] opacity-90">
-                    Respons tes: &quot;{testResult.reply}&quot; ({testResult.latencyMs}ms)
-                  </p>
-                ) : (
-                  <p className="mt-1 text-[11px] font-mono break-all opacity-90">{testResult.error}</p>
-                )}
-              </motion.div>
-            )}
-
             {/* Action Buttons */}
             <div className="flex items-center justify-between gap-3 pt-3 flex-wrap border-t border-border/60">
               <Button
@@ -471,17 +482,17 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
                 size="sm"
                 onClick={handleTestConnection}
                 disabled={isTesting || !config.apiKey}
-                className="gap-1.5 h-9"
+                className="gap-1.5 h-9 bg-primary/5 hover:bg-primary/10 border-primary/30"
               >
                 {isTesting ? (
                   <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    <span>Menguji...</span>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    <span>Menguji Koneksi &amp; Diagnostik...</span>
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="h-3.5 w-3.5" />
-                    <span>Tes Koneksi</span>
+                    <RefreshCw className="h-3.5 w-3.5 text-primary" />
+                    <span>Tes Koneksi &amp; Diagnostik LLM</span>
                   </>
                 )}
               </Button>
@@ -496,11 +507,269 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
                 >
                   Mode Mandiri
                 </Button>
-                <Button type="button" size="sm" onClick={handleSave} className="gap-1.5 h-9 shadow-sm">
+                <Button type="button" size="sm" onClick={handleSave} className="gap-1.5 h-9 shadow-sm bg-emerald-600 hover:bg-emerald-700">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   <span>Simpan Pengaturan</span>
                 </Button>
               </div>
+            </div>
+
+            {/* Diagnostic Log Inspector Panel */}
+            {testResult && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-3 pt-2"
+              >
+                <div
+                  className={`rounded-lg border p-4 text-xs transition-all ${
+                    testResult.success
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+                      : "border-red-500/40 bg-red-500/10 text-red-800 dark:text-red-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 font-semibold text-sm">
+                      {testResult.success ? (
+                        <>
+                          <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                          <span>KONEKSI TERHUBUNG &amp; LLM API SIAP!</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                          <span>KONEKSI GAGAL / UNCONNECTED</span>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {testResult.logDetails && (
+                        <Badge
+                          variant="outline"
+                          className={
+                            testResult.logDetails.status === 200
+                              ? "bg-emerald-600 text-white font-mono"
+                              : "bg-red-600 text-white font-mono"
+                          }
+                        >
+                          HTTP {testResult.logDetails.status} {testResult.logDetails.statusText}
+                        </Badge>
+                      )}
+                      {testResult.latencyMs !== undefined && (
+                        <Badge variant="secondary" className="font-mono text-[10px] gap-1">
+                          <Activity className="h-3 w-3" /> {testResult.latencyMs} ms
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="mt-2 text-xs opacity-90 leading-relaxed font-medium">
+                    {testResult.message || testResult.error}
+                  </p>
+                </div>
+
+                {/* Log Inspector Controls */}
+                {testResult.logDetails && (
+                  <Card className="border-border/80 bg-zinc-950 text-zinc-100 shadow-md overflow-hidden font-mono text-[11.5px]">
+                    <div className="flex items-center justify-between px-3 py-2 bg-zinc-900 border-b border-zinc-800">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="h-4 w-4 text-emerald-400" />
+                        <span className="font-sans font-semibold text-xs text-zinc-200">
+                          Log Pembaca Respon Diagnostik LLM
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCopyLog}
+                          className="h-7 px-2 text-[11px] text-zinc-300 hover:text-white hover:bg-zinc-800 gap-1"
+                        >
+                          {copiedLog ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                          <span>{copiedLog ? "Tersalin!" : "Salin Log"}</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowLogDetails(!showLogDetails)}
+                          className="h-7 px-2 text-[11px] text-zinc-300 hover:text-white hover:bg-zinc-800 gap-1"
+                        >
+                          {showLogDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                          <span>{showLogDetails ? "Sembunyikan Log" : "Lihat Log"}</span>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {showLogDetails && (
+                      <div className="p-3 space-y-3">
+                        {/* Sub Tabs */}
+                        <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+                          <button
+                            type="button"
+                            onClick={() => setActiveLogTab("summary")}
+                            className={`px-2.5 py-1 rounded text-[11px] font-sans transition-all ${
+                              activeLogTab === "summary"
+                                ? "bg-emerald-500/20 text-emerald-400 font-semibold"
+                                : "text-zinc-400 hover:text-zinc-200"
+                            }`}
+                          >
+                            Ringkasan Respon
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveLogTab("request")}
+                            className={`px-2.5 py-1 rounded text-[11px] font-sans transition-all ${
+                              activeLogTab === "request"
+                                ? "bg-emerald-500/20 text-emerald-400 font-semibold"
+                                : "text-zinc-400 hover:text-zinc-200"
+                            }`}
+                          >
+                            Request Payload
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveLogTab("response")}
+                            className={`px-2.5 py-1 rounded text-[11px] font-sans transition-all ${
+                              activeLogTab === "response"
+                                ? "bg-emerald-500/20 text-emerald-400 font-semibold"
+                                : "text-zinc-400 hover:text-zinc-200"
+                            }`}
+                          >
+                            Response Raw (JSON)
+                          </button>
+                        </div>
+
+                        {/* Tab Content */}
+                        {activeLogTab === "summary" && (
+                          <div className="space-y-2 leading-relaxed">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                              <div>
+                                <span className="text-zinc-400">Timestamp: </span>
+                                <span className="text-emerald-300">{testResult.logDetails.timestamp}</span>
+                              </div>
+                              <div>
+                                <span className="text-zinc-400">Provider: </span>
+                                <span className="text-amber-300">{testResult.logDetails.provider.toUpperCase()}</span>
+                              </div>
+                              <div>
+                                <span className="text-zinc-400">Model: </span>
+                                <span className="text-blue-300">{testResult.logDetails.model}</span>
+                              </div>
+                              <div>
+                                <span className="text-zinc-400">Latensi: </span>
+                                <span className="text-purple-300">{testResult.logDetails.latencyMs} ms</span>
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-zinc-400">Target Endpoint URL: </span>
+                              <span className="text-zinc-200 break-all">{testResult.logDetails.url}</span>
+                            </div>
+                            {testResult.logDetails.replyText && (
+                              <div className="pt-2 border-t border-zinc-800">
+                                <span className="text-zinc-400 block mb-1">Pesan Balasan Test Prompt (&quot;Ping&quot;):</span>
+                                <div className="p-2 rounded bg-zinc-900 border border-zinc-800 text-emerald-300 font-mono">
+                                  &quot;{testResult.logDetails.replyText}&quot;
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {activeLogTab === "request" && (
+                          <div className="space-y-2">
+                            <div>
+                              <span className="text-zinc-400 block mb-1">Target Endpoint:</span>
+                              <span className="text-zinc-200">{testResult.logDetails.url}</span>
+                            </div>
+                            <div>
+                              <span className="text-zinc-400 block mb-1">Headers:</span>
+                              <pre className="p-2 rounded bg-zinc-900 text-amber-300 overflow-x-auto text-[11px]">
+                                {JSON.stringify(testResult.logDetails.requestHeaders, null, 2)}
+                              </pre>
+                            </div>
+                            <div>
+                              <span className="text-zinc-400 block mb-1">Request Body:</span>
+                              <pre className="p-2 rounded bg-zinc-900 text-blue-300 overflow-x-auto text-[11px]">
+                                {JSON.stringify(testResult.logDetails.requestBody, null, 2)}
+                              </pre>
+                            </div>
+                          </div>
+                        )}
+
+                        {activeLogTab === "response" && (
+                          <div>
+                            <span className="text-zinc-400 block mb-1">Respon Mentah dari Provider LLM:</span>
+                            <pre className="p-2.5 rounded bg-zinc-900 text-emerald-400 overflow-x-auto max-h-72 text-[11px] leading-relaxed">
+                              {JSON.stringify(testResult.logDetails.responseBody, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Card>
+                )}
+              </motion.div>
+            )}
+          </CardContent>
+        </Card>
+      ) : config.provider === "puter" ? (
+        /* Puter.js Info Panel — No API Key Required */
+        <Card className="border-green-500/30 bg-green-500/5">
+          <CardContent className="p-6 text-center space-y-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500/15 text-green-500 mx-auto">
+              <Zap className="h-7 w-7" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-base text-green-700 dark:text-green-400">Puter.js AI — Gratis, Tanpa API Key</h3>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto mt-1 leading-relaxed">
+                Puter.js menggunakan akun Puter pengguna untuk memanggil AI terbaik seperti{" "}
+                <code className="font-mono text-green-600 dark:text-green-400">claude-3-7-sonnet</code> dan{" "}
+                <code className="font-mono text-green-600 dark:text-green-400">gpt-4o</code> secara gratis.
+                Tidak perlu API key — cukup punya akun Puter aktif.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left text-xs p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+              <div className="space-y-1">
+                <span className="font-medium text-green-700 dark:text-green-400 block">✅ Keunggulan Puter.js:</span>
+                <ul className="text-muted-foreground space-y-0.5">
+                  <li>• Gratis tanpa kartu kredit</li>
+                  <li>• Akses GPT-4o &amp; Claude Sonnet</li>
+                  <li>• Auto-login via akun Puter</li>
+                  <li>• Fallback otomatis tersedia</li>
+                </ul>
+              </div>
+              <div className="space-y-1">
+                <span className="font-medium text-amber-600 dark:text-amber-400 block">⚠️ Perlu Diperhatikan:</span>
+                <ul className="text-muted-foreground space-y-0.5">
+                  <li>• Berjalan di sisi browser</li>
+                  <li>• Perlu internet &amp; akun Puter</li>
+                  <li>• Rate limit tergantung kuota akun</li>
+                  <li>• Prompt dikirim ke puter.com</li>
+                </ul>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 justify-center pt-1">
+              <Button
+                size="sm"
+                onClick={handleSave}
+                className="gap-1.5 bg-green-600 hover:bg-green-700 text-white shadow-sm"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>Aktifkan Puter.js</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleProviderSelect("openai")}
+                className="gap-1.5"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+                <span>Gunakan API Token</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -516,7 +785,7 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
                 SmartRPS Builder menggunakan engine pembangun RPS berbasis kurikulum OBE bawaan secara langsung tanpa memerlukan API Token atau layanan eksternal.
               </p>
             </div>
-            <div className="pt-2">
+            <div className="pt-2 flex flex-wrap gap-2 justify-center">
               <Button
                 variant="outline"
                 size="sm"
@@ -524,7 +793,16 @@ export function LlmSettings({ onConfigChange }: LlmSettingsProps) {
                 className="gap-1.5"
               >
                 <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-                <span>Gunakan API Token (OpenAI / Anthropic)</span>
+                <span>Gunakan API Token (OpenAI / Anthropic / Dahl)</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleProviderSelect("puter")}
+                className="gap-1.5"
+              >
+                <Zap className="h-3.5 w-3.5 text-green-500" />
+                <span>Puter.js (Gratis, Tanpa API Key)</span>
               </Button>
             </div>
           </CardContent>

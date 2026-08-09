@@ -1,0 +1,446 @@
+2 
+ 
+No
+Prompt
+Ket
+Prompt 1 
+"Halo. Saya ingin menyusun Rencana Pembelajaran 
+Semester (RPS). Saya ingin kamu berperan sebagai Pakar 
+Kurikulum Pendidikan Tinggi dan Ahli Instructional 
+Design yang menguasai prinsip Outcome-Based 
+Education (OBE) dan standar SN-DIKTI Indonesia, 
+paham terhadap file terlampir. 
+Tugasmu adalah mendampingi saya menyusun RPS yang 
+memiliki Constructive Alignment (Keselarasan 
+Konstruktif). Jangan berikan output panjang dulu, cukup 
+konfirmasi jika kamu mengerti peran ini."
+Lakukan ini 
+men-setting 
+"otak" AI agar 
+berpikir seperti 
+ahli kurikulum. 
+ 
+Prompt 2 
+"Saya akan memberikan CPL dan CPMK nanti. Tapi 
+sebelumnya, tolong jelaskan secara singkat bagaimana 
+strategimu untuk memastikan 'Constructive Alignment' 
+antara Sub-CPMK (Kemampuan akhir) dengan Metode 
+Penilaian yang akan kamu sarankan nanti? Berikan satu 
+contoh konkret." 
+Tes apakah AI 
+mengerti 
+konsep 
+alignment 
+sebelum kita 
+masukkan data 
+mata kuliah.
+Prompt 3 
+"Bertindaklah sebagai Ahli Kurikulum OBE. Saya adalah 
+Dosen pengampu mata kuliah "Konsep Sistem Informasi" 
+di Program Studi Informatika Kesehatan. Kita akan 
+menyusun RPS step-by-step. Apakah kamu siap? "
+Sesuaikan 
+matakuliah dan 
+prodi yang 
+Anda Ajar
+Prompt 4 
+"Berikut adalah CPL (Capaian Pembelajaran Lulusan) 
+Program Studi yang dibebankan kepada mata kuliah saya 
+Konsep Sistem Informasi : 
+1. Mampu menjelaskan dan mempraktekkan konsep, 
+metode, teknik dan tahapan data Mining serta 
+visualisasi data sebagai pengetahuan yang 
+berkaitan dengan teknologi informasi kesehatan 
+2. Mampu membangun aplikasi dalam sebuah proyek 
+sistem informasi kesehatan 
+Tolong analisis CPL di atas. Identifikasi kata kunci 
+kompetensi (keyword) dan perkirakan target Level 
+Taksonomi Bloom (C1-C6) atau Psikomotorik (P1-P5) 
+yang sesuai untuk masing-masing CPL tersebut dalam 
+konteks mata kuliah saya. Jangan buat CPMK dulu, cukup 
+analisisnya." 
+Masukkan lagi 
+Nama 
+Matakuliah 
+Anda, serta 
+Paste CPL 
+Matakuliahnya, 
+CPL1, CPL2, 
+dstnya 
+Prompt 5 
+"Bagus. Sekarang, berdasarkan analisis CPL di atas, 
+rumuskan 4-5 CPMK (Capaian Pembelajaran Mata 
+Kuliah). 
+Gunakan aturan Chain of Thought berikut dalam 
+menyusunnya: 
+1. Pastikan setiap CPMK merupakan turunan 
+langsung dari CPL yang relevan.
+Meminta 
+Merumuskan 
+CPMK dengan 
+Prinsip ABCD 
+(Audience, 
+Behavior, 
+Condition, 
+Degree) dan 
+
+3 
+ 
+2. Gunakan Kata Kerja Operasional (KKO) yang 
+terukur (hindari kata: memahami, mengetahui, 
+mengerti). Gunakan referensi Taksonomi Bloom 
+Revisi (Anderson & Krathwohl). 
+3. Terapkan format ABCD (Audience, Behavior, 
+Condition, Degree) dalam narasi kalimatnya. 
+4. Pastikan CPMK mencakup aspek Sikap, 
+Pengetahuan, dan Keterampilan secara 
+proporsional sesuai CPL. 
+Sajikan output dalam format Tabel dengan kolom: 
+| Kode CPL | Rumusan CPMK | Level Bloom 
+(C/A/P) | Unsur Condition & Degree |" 
+Taksonomi 
+Bloom  
+Prompt 6 
+"Berdasarkan CPMK yang sudah kita susun di atas, tolong 
+buatkan Deskripsi Singkat Mata Kuliah ini (maksimal 1 
+paragraf, sekitar 150-200 kata). 
+Pastikan deskripsi tersebut mencakup: 
+1. Ruang lingkup materi utama. 
+2. Relevansi mata kuliah ini dengan profil 
+lulusan/dunia kerja. 
+3. Gambaran umum aktivitas pembelajaran 
+(teori/praktik)." 
+Lanjut Buat 
+Deskripsi 
+Matakuliah 
+Prompt 7 
+"Sekarang, lakukan Analisis Pembelajaran. Turunkan 
+CPMK tersebut menjadi Sub-CPMK (Kemampuan 
+Akhir yang direncanakan) untuk 16 Minggu pertemuan 
+(termasuk UTS di minggu 8 dan UAS di minggu 16). 
+Ikuti aturan berikut: 
+1. Scaffolding: Urutkan materi dari tingkat dasar ke 
+tingkat lanjut secara logis. 
+2. Alignment: Setiap Sub-CPMK harus merujuk pada 
+CPMK tertentu (Tuliskan kodenya, misal: CPMK-
+1). 
+3. Format: Jangan hanya menulis topik judul. 
+Tulislah dalam kalimat kemampuan (KKO). 
+Contoh: 'Mahasiswa mampu membedakan...' 
+BUKAN 'Pengantar Sosiologi'. 
+Sajikan dalam format Tabel: 
+| Minggu Ke- | Sub-CPMK (Kemampuan Akhir) | Bahan 
+Kajian (Topik Materi) | Estimasi Beban Waktu (Menit) | 
+Ref ke CPMK |"
+Buat Peta 
+Kompetensi 
+(Analisis 
+Pembelajaran) 
+
+4 
+ 
+Prompt 8 
+"Rancangan mingguannya sudah cukup baik, tapi tolong 
+revisi. Mata kuliah ini berbobot 3 SKS (1 Teori, 2 
+Praktikum). 
+Saya ingin struktur per minggunya diubah: Setiap 
+pertemuan harus ada sesi penjelasan konsep (Teori) 
+dilanjutkan langsung dengan latihan studi kasus (Praktik) 
+di minggu yang sama. Tolong sesuaikan kolom 'Bahan 
+Kajian' dan 'Estimasi Waktu'-nya." 
+Revisi 
+/Adjustment. 
+Digunakan 
+apabila perlu 
+dilakukan 
+revisi untuk 
+Sub-CPMK 
+Prompt 9  
+"Halo. Kita lanjutkan pekerjaan menyusun RPS kemarin. 
+Tolong buatkan rangkuman singkat (maksimal 3 poin) 
+tentang CPL dan struktur Sub-CPMK yang sudah kita 
+sepakati terakhir kali. Saya ingin memastikan kita masih 
+dalam konteks yang sama sebelum lanjut ke detil metode 
+pembelajaran." 
+ 
+Wake Up Call, 
+Gunakan 
+Prompt ini, 
+jika kita 
+berhenti chat 
+dengan AI 
+dalam waktu 
+yang lama
+Prompt 10 
+"Tolong review kembali tabel Sub-CPMK yang baru saja 
+kamu buat di atas. 
+Lakukan pengecekan berikut: 
+1. Cari apakah ada penggunaan kata kerja yang 
+abstrak/tidak terukur (seperti: memahami, 
+mengetahui, mengerti, mempelajari). Jika ada, 
+ganti otomatis dengan KKO yang setara tapi 
+terukur (contoh: 'memahami' diganti 'menjelaskan' 
+atau 'mengidentifikasi'). 
+2. Cek apakah ada lonjakan level kognitif yang tidak 
+logis antar minggu. 
+Tampilkan hanya bagian yang kamu revisi saja dan 
+jelaskan alasannya."
+Lakukan 
+Perintah 
+Koreksi, oleh 
+AI sendiri, 
+karena pasti 
+akan ada yang 
+belum sesuai 
+dengan 
+rumusan 
+Taksonomi 
+Bloom 
+Prompt 10 
+"Halo. Kita lanjutkan pekerjaan menyusun RPS kemarin. 
+Tolong buatkan rangkuman singkat (maksimal 3 poin) 
+tentang CPL dan struktur Sub-CPMK yang sudah kita 
+sepakati terakhir kali. Saya ingin memastikan kita masih 
+dalam konteks yang sama sebelum lanjut ke detil metode 
+pembelajaran." 
+ 
+Wake Up Call, 
+ini dilakukan 
+jika kita 
+berhenti terlalu 
+lama 
+bersambung 
+beberapa hari, 
+dan masih 
+melanjutkan 
+chatnya. 
+(Jika jawaban 
+AI sesuai 
+dengan data 
+kemarin, 
+
+5 
+ 
+berarti aman. 
+Jika ngawur, 
+minta peserta 
+copy-paste 
+ulang tabel 
+terakhir).
+Prompt 11 
+"Untuk kolom Referensi/Daftar Pustaka, JANGAN 
+MENGARANG judul buku sendiri. 
+Gunakan HANYA daftar buku terlampir ini, 
+Tugasmu: Petakan buku mana (dan Bab berapa jika tahu) 
+yang paling relevan untuk digunakan pada setiap minggu 
+(Sub-CPMK) yang sudah kita susun di tabel sebelumnya." 
+Upload file 
+bukunya, ini 
+untuk 
+mencocokkan 
+referensi 
+Prompt 12 
+"Kita fokus ke Minggu ke-5 dengan topik [Sebutkan 
+Topik, misal: Keamanan Jaringan]. 
+Saya ingin menerapkan metode pembelajaran Case 
+Method (Pemecahan Kasus). Tolong buatkan Skenario 
+Pembelajaran detail untuk durasi tatap muka 100 menit. 
+Skenario harus mencakup: 
+1. Narasi Kasus: Buatkan satu studi kasus fiktif tapi 
+realistis tentang [Misal: Serangan Ransomware di 
+Rumah Sakit] yang problematik dan datanya tidak 
+lengkap (agar mahasiswa berpikir). 
+2. Pertanyaan Pemantik: 3 pertanyaan kritis yang 
+harus didiskusikan kelompok. 
+3. Rundown Aktivitas: Bagi waktu 100 menit tersebut 
+(misal: 10 menit pembukaan, 40 menit diskusi 
+kelompok, 30 menit presentasi debat, 20 menit 
+feedback dosen/konklusi). 
+Tujuan akhirnya adalah mahasiswa mampu menganalisis 
+akar masalah dan memberikan solusi taktis."
+Optimasi 
+Metode 
+Pembelajaran. 
+Merancang 
+Case Method 
+Prompt 13 
+"Untuk materi Minggu 12-14, saya ingin menerapkan 
+Team-Based Project (PjBL). 
+Tolong rancang sebuah Lembar Tugas Proyek dengan 
+ketentuan: 
+1. The Driving Question: Berikan satu pertanyaan 
+tantangan utama yang menantang mahasiswa 
+menciptakan solusi inovatif terkait [Topik Mata 
+Kuliah].
+Optimasi 
+Metode 
+Pembelajaran. 
+Team-Based 
+Project (PjBL) 
+
+6 
+ 
+2. Output Proyek: Tentukan produk luaran yang 
+spesifik (misal: Video dokumenter 5 menit atau 
+Prototype UI/UX). 
+3. Timeline Kerja: Pecah pengerjaan tugas ini 
+menjadi 3 tahap (Minggu 12: Perencanaan, Minggu 
+13: Produksi, Minggu 14: Finalisasi). 
+4. Peran Anggota: Sarankan pembagian peran dalam 
+satu kelompok (misal: 1 Project Manager, 1 Analis, 
+1 Desainer) agar semua bekerja." 
+Prompt 14 
+"Kita akan membuat instrumen penilaian untuk tugas Case 
+Method / PjBL yang baru saja kita rancang di atas. 
+Tolong buatkan Rubrik Penilaian Analitik dalam format 
+Tabel. 
+Spesifikasi Kolom (Skala Penilaian): 
+ Sangat Baik (Skor 81-100) 
+ Baik (Skor 61-80) 
+ Cukup (Skor 41-60) 
+ Kurang (Skor <40) 
+Spesifikasi Baris (Kriteria): 
+ Ketajaman Analisis Masalah (Bobot 30%) 
+ Solusi & Inovasi (Bobot 30%) 
+ Kemampuan Komunikasi/Presentasi (Bobot 20%) 
+ Kerjasama Tim (Bobot 20%) 
+TUGAS PENTING: Isilah setiap sel pertemuan antara 
+Baris dan Kolom dengan Deskripsi Indikator Performa 
+yang spesifik. Jangan gunakan kalimat umum seperti 
+'Sangat baik dalam menganalisis', tapi jelaskan 
+BAGAIMANA kriterianya. 
+Contoh: Untuk 'Sangat Baik', tulis 'Analisis mendalam, 
+didukung data valid, dan mampu mengidentifikasi akar 
+masalah secara tepat'." 
+Membuat 
+Rubrik 
+Penilaian 
+Analitik 
+Prompt 16 
+"Berdasarkan materi Minggu ke-3 (Sub-CPMK: 
+[Sebutkan Sub-CPMK]), buatkan 5 Soal Pilihan Ganda 
+dan 1 Soal Esai. 
+Ketentuan: 
+1. Soal harus bervariasi dari Level Kognitif C2 
+(Pemahaman) sampai C4 (Analisis).
+Membuat Bank 
+Soal Kuis 
+
+7 
+ 
+2. Sajikan output dengan format: 
+o Pertanyaan 
+o Pilihan Jawaban (A,B,C,D,E) 
+o Kunci Jawaban 
+o Pembahasan Singkat 
+o Label Level Bloom (Misal: Ini soal C4 
+karena meminta mahasiswa 
+membandingkan...) 
+Pastikan soal studi kasusnya relevan dengan konteks 
+Indonesia."
+Prompt 17 
+"Bertindaklah sebagai Ahli Kurikulum OBE. Kita akan 
+mendetailkan rencana pembelajaran untuk Minggu ke-
+[ISI MINGGU] mata kuliah [NAMA MK]. 
+Data Masukan: 
+• 
+Sub-CPMK (Kemampuan Akhir): [Paste Sub-
+CPMK di sini, misal: Mampu menganalisis strategi 
+pemasaran...] 
+• 
+Bahan Kajian (Materi): [Sebutkan Materi 
+Singkat] 
+Tugas: Buatkan rincian tabel RPS untuk minggu ini yang 
+mencakup 4 komponen berikut: 
+1. Indikator Penilaian: Tuliskan 3-4 indikator spesifik 
+yang dapat diamati (observable) untuk mengukur 
+ketercapaian Sub-CPMK di atas. Gunakan kata kerja 
+operasional. 
+2. Kriteria & Bentuk Penilaian: 
+• 
+Kriteria: Sebutkan jenis rubriknya (misal: 
+Rubrik Analitik / Pedoman Penskoran). 
+• 
+Bentuk: Sebutkan metode penilaiannya 
+(misal: Tes Tulis / Presentasi / Laporan). 
+3. Bentuk & Metode Pembelajaran (Luring/Daring): 
+o Rancang aktivitas Student Centered 
+Learning (SCL). Jangan hanya ceramah. 
+Gunakan metode seperti Small Group 
+Discussion, Case Method, atau Discovery 
+Learning. 
+o Jelaskan skenario aktivitasnya secara 
+singkat (apa yang dilakukan dosen, apa 
+yang dilakukan mahasiswa).
+Menyusun 
+indikator 
+penilaian, 
+kriteria 
+penilaian dan 
+bentuknya, 
+serta kegiatan 
+pembelajaran 
+
+8 
+ 
+4. Estimasi Waktu: Hitung alokasi waktu untuk TM 
+(Tatap Muka), PT (Penugasan Terstruktur), dan BM 
+(Belajar Mandiri) sesuai bobot [ISI SKS] SKS. 
+Sajikan output dalam format tabel yang rapi." 
+Prompt 18 
+Buatkan saya draft "Rencana Tugas Mahasiswa" yang 
+komprehensif berdasarkan data berikut: 
+• 
+Mata Kuliah: [Sebutkan Nama Mata Kuliah] 
+• 
+Topik/Materi: [Sebutkan Topik Spesifik Tugas] 
+• 
+Capaian Pembelajaran (CPMK): [Sebutkan 
+tujuan yang ingin dicapai, misal: Mahasiswa 
+mampu menganalisis...] 
+Format Luaran (Output) harus mengikuti struktur 
+berikut: 
+• 
+JUDUL TUGAS: Berikan judul yang menarik dan 
+relevan. 
+• 
+DESKRIPSI TUGAS: Jelaskan konteks tugas, 
+tujuan tugas, dan urgensi tugas ini bagi pemahaman 
+mahasiswa. 
+• 
+METODE PENGERJAAN TUGAS: Berikan 
+langkah-langkah sistematis (step-by-step) yang 
+harus dilakukan mahasiswa mulai dari persiapan 
+hingga pengumpulan. 
+• 
+BENTUK DAN FORMAT LUARAN: Jelaskan 
+secara detail apakah berupa dokumen (PDF), 
+presentasi, video, atau produk lainnya, termasuk 
+aturan penamaan file dan format penulisan. 
+• 
+INDIKATOR, KRITERIA DAN BOBOT 
+PENILAIAN: Buatkan kriteria penilaian yang 
+jelas (misal: Orisinalitas, Ketajaman Analisis, 
+Kerapihan) beserta persentase bobotnya (Total 
+100%). Buat dalam bentuk poin-poin. 
+• 
+JADWAL PELAKSANAAN: Buat estimasi 
+durasi pengerjaan (misal: Minggu ke-5 sampai 
+Minggu ke-7). 
+• 
+LAIN-LAIN: Tambahkan informasi mengenai 
+sanksi plagiasi, ketentuan kerja kelompok/individu, 
+atau platform pengumpulan (LMS). 
+• 
+DAFTAR RUJUKAN: Cantumkan minimal 3 
+referensi akademik (Buku/Jurnal) yang relevan 
+untuk membantu mahasiswa mengerjakan tugas ini. 
+• 
+Gaya Bahasa: Gunakan bahasa akademis yang 
+formal, jelas, dan mudah dipahami oleh 
+mahasiswa. 
+Rencana Tugas 
+
+9 
+ 
+ 

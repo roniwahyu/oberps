@@ -21,6 +21,7 @@ export interface RPSRecord {
   promptText: string;
   jsonData: string;
   tags: string;
+  status: "DRAFT" | "SUBMITTED" | "APPROVED" | "PUBLISHED";
   createdAt: string;
   updatedAt: string;
 }
@@ -53,12 +54,19 @@ class SQLiteDB {
           promptText TEXT NOT NULL,
           jsonData TEXT NOT NULL,
           tags TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'DRAFT',
           createdAt TEXT NOT NULL,
           updatedAt TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_rps_mataKuliah ON RPS(mataKuliah);
         CREATE INDEX IF NOT EXISTS idx_rps_programStudi ON RPS(programStudi);
       `);
+      // Add status column if existing table lacks it
+      try {
+        this.db.exec("ALTER TABLE RPS ADD COLUMN status TEXT NOT NULL DEFAULT 'DRAFT';");
+      } catch {
+        // Column already exists
+      }
     } catch {
       // Ignore concurrency initialization locks across build worker threads
     }
@@ -76,6 +84,7 @@ class SQLiteDB {
       promptText: String(row.promptText),
       jsonData: String(row.jsonData),
       tags: String(row.tags || ""),
+      status: (row.status as any) || "DRAFT",
       createdAt: String(row.createdAt),
       updatedAt: String(row.updatedAt),
     };
@@ -124,6 +133,7 @@ class SQLiteDB {
         promptText: string;
         jsonData: string;
         tags?: string;
+        status?: string;
       };
     }): Promise<RPSRecord> => {
       const { data } = options;
@@ -133,10 +143,11 @@ class SQLiteDB {
       const now = new Date().toISOString();
       const deskripsi = data.deskripsi ?? null;
       const tags = data.tags ?? "";
+      const status = data.status ?? "DRAFT";
 
       const stmt = this.db.prepare(`
-        INSERT INTO RPS (id, mataKuliah, sks, semester, programStudi, deskripsi, promptText, jsonData, tags, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO RPS (id, mataKuliah, sks, semester, programStudi, deskripsi, promptText, jsonData, tags, status, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       stmt.run(
@@ -149,6 +160,7 @@ class SQLiteDB {
         data.promptText,
         data.jsonData,
         tags,
+        status,
         now,
         now
       );
@@ -181,6 +193,7 @@ class SQLiteDB {
         "promptText",
         "jsonData",
         "tags",
+        "status",
       ];
 
       for (const field of fields) {
